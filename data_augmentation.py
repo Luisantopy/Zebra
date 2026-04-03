@@ -3,6 +3,7 @@ from torchvision import datasets
 from torchvision.transforms import v2
 from torch.utils.data import DataLoader
 
+
 def get_train_dataset(root="data/train"):
     """Trainingsdaten beim Laden augmentieren"""
     train_transforms = v2.Compose([
@@ -21,6 +22,7 @@ def get_train_dataset(root="data/train"):
         transform=train_transforms,
     )
 
+
 def get_eval_dataset(root="data/val"):
     """Validierungsdaten beim Laden nur ToTensor/Normalize"""
     eval_transforms = v2.Compose([
@@ -34,11 +36,13 @@ def get_eval_dataset(root="data/val"):
         transform=eval_transforms,
     )
 
-def get_loader(dataset, batch_size=32, shuffle=True):
+
+def get_loader(dataset, batch_size=32, shuffle=False, sampler=None):
     return DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=shuffle,
+        sampler=sampler,
         num_workers=0,
         pin_memory=torch.cuda.is_available(),
     )

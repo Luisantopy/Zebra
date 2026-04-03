@@ -1,88 +1,94 @@
 import torch
 import torch.nn as nn
+from collections import Counter
+from torch.utils.data import WeightedRandomSampler
+from pathlib import Path
+from datetime import datetime
 
 from data_augmentation import get_train_dataset, get_eval_dataset, get_loader
+from torch_cnn_simple import SimpleCNNBinary, SimpleCNNCrossEntropy
+from model_registry import build_model, get_model_type
 
-
-# --- Modell definieren ---
-class SimpleCNN(nn.Module):
-    def __init__(self, num_classes=2):
-        super().__init__()
-
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-        )
-
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Linear(128, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
 
 # --- Training + Validation ---
-def train_one_epoch(model, loader, criterion, optimizer, device):
-    model.train()
+def run_epoch(model, loader, device, optimizer=None):
+    is_training = optimizer is not None
+
+    if is_training:
+        model.train()
+    else:
+        model.eval()
+
     running_loss = 0.0
     correct = 0
     total = 0
 
-    for images, labels in loader:
-        images = images.to(device)
-        labels = labels.to(device)
+    # für Recall
+    true_positive = 0
+    false_negative = 0
 
-        optimizer.zero_grad()
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+    context = torch.enable_grad() if is_training else torch.no_grad()
 
-        running_loss += loss.item() * images.size(0)
-        preds = outputs.argmax(dim=1)
-        correct += (preds == labels).sum().item()
-        total += labels.size(0)
+    with context:
+        for images, labels in loader:
+            images = images.to(device)
+            labels = labels.to(device)
 
-    epoch_loss = running_loss / total
-    epoch_acc = correct / total
-    return epoch_loss, epoch_acc
+            if is_training:
+                optimizer.zero_grad()
 
+            outputs = model(images)
+            loss = model.compute_loss(outputs, labels)
 
-@torch.no_grad()
-def evaluate(model, loader, criterion, device):
-    model.eval()
-    running_loss = 0.0
-    correct = 0
-    total = 0
+            if is_training:
+                loss.backward()
+                optimizer.step()
 
-    for images, labels in loader:
-        images = images.to(device)
-        labels = labels.to(device)
+            preds = model.predict(outputs)
 
-        outputs = model(images)
-        loss = criterion(outputs, labels)
+            running_loss += loss.item() * images.size(0)
+            correct += (preds == labels).sum().item()
+            total += labels.size(0)
 
-        running_loss += loss.item() * images.size(0)
-        preds = outputs.argmax(dim=1)
-        correct += (preds == labels).sum().item()
-        total += labels.size(0)
+            # Recall
+            # positive Klasse = 1
+            positive_label = getattr(model, "positive_label", 1)
+            true_positive += ((preds == positive_label) & (labels == positive_label)).sum().item()
+            false_negative += ((preds != positive_label) & (labels == positive_label)).sum().item()
 
     epoch_loss = running_loss / total
     epoch_acc = correct / total
-    return epoch_loss, epoch_acc
+    recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0.0
+
+
+    return epoch_loss, epoch_acc, recall
+
+
+# --- Experiment Umgebung erstellen ---
+def setup_experiment():
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    exp_dir = Path("trained_models") / f"exp_{timestamp}"
+    exp_dir.mkdir(parents=True, exist_ok=True)
+
+    best_model_path = exp_dir / "best_model.pth"
+    final_model_path = exp_dir / "final_model.pth"
+    metrics_path = exp_dir / "metrics.txt"
+
+    return exp_dir, best_model_path, final_model_path, metrics_path
+
+
+# --- Weighted Random Sampling ---
+def build_weighted_sampler(dataset):
+    class_counts = Counter(dataset.targets)
+    sample_weights = [1.0 / class_counts[label] for label in dataset.targets]
+    sample_weights = torch.DoubleTensor(sample_weights)
+
+    sampler = WeightedRandomSampler(
+        weights=sample_weights,
+        num_samples=len(sample_weights),
+        replacement=True,
+    )
+    return sampler, class_counts
 
 
 def main():
@@ -96,39 +102,125 @@ def main():
 
     print("Device:", device)
 
+    # --- Experiment Setup ---
+    exp_dir, best_model_path, final_model_path, metrics_path = setup_experiment()
+    print(f"📁 Experiment directory: {exp_dir}")
+
     # --- Daten laden ---
     train_dataset = get_train_dataset("data/train")
     val_dataset   = get_eval_dataset("data/val")
     test_dataset  = get_eval_dataset("data/test")
+    print("Classes:", train_dataset.classes)
+    print("Class mapping:", train_dataset.class_to_idx)
+
+    # --- Weighted sampler für Trainingsdaten ---
+    train_sampler, class_counts = build_weighted_sampler(train_dataset)
+    print("Train class counts:", class_counts)
 
     # --- DataLoader ---
-    train_loader = get_loader(train_dataset, batch_size=32, shuffle=True)
-    val_loader = get_loader(val_dataset, batch_size=32, shuffle=False)
-    test_loader = get_loader(test_dataset, batch_size=32, shuffle=False)
+    train_loader = get_loader(train_dataset, batch_size=32, sampler=train_sampler)
+    val_loader = get_loader(val_dataset, batch_size=32)
+    test_loader = get_loader(test_dataset, batch_size=32)
 
-    # --- Loss + Optimizer ---
-    model = SimpleCNN(num_classes=2).to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    # --- Model ---
+    model_name = "cross_entropy"       # hier Modellname austauschen für anderes Modell, zB "cross_entropy" oder "binary_bce"
+    model_type = get_model_type(model_name)
+
+    if model_type == "binary":
+        negatives = class_counts[0]
+        positives = class_counts[1]
+        pos_weight = negatives / positives
+
+        model = build_model(model_name, num_classes=len(train_dataset.classes), pos_weight=pos_weight)
+
+    elif model_type == "multiclass":
+        total = sum(class_counts.values())
+        class_weights = [total / class_counts[i] for i in range(len(train_dataset.classes))]
+
+        model = build_model(model_name, num_classes=len(train_dataset.classes), class_weights=class_weights)
+
+    model = model.to(device)
+
+    # Lernrate anpasseb
+    lr = 1e-4
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=0.5,
+        patience=2
+    )
 
     num_epochs = 5
 
+    # --- Config speichern ---
+    with open(exp_dir / "config.txt", "w") as f:
+        f.write(f"model_name={model_name}\n")
+        f.write(f"epochs={num_epochs}\n")
+        f.write("lr=1e-3\n")
+        f.write("batch_size=32\n")
+        f.write(f"classes={train_dataset.classes}\n")
+        f.write(f"class_counts={dict(class_counts)}\n")
+
+    # --- Metrics speichern
+    with open(metrics_path, "w") as f:
+        f.write("epoch,train_loss,train_acc,train_recall,val_loss,val_acc,val_recall,best_model\n")
+
+    # --- Training ---    
+    best_val_loss = float("inf")
+
     for epoch in range(num_epochs):
-        train_loss, train_acc = train_one_epoch(
-            model, train_loader, criterion, optimizer, device
+        train_loss, train_acc, train_recall = run_epoch(
+            model, train_loader, device, optimizer=optimizer
         )
-        val_loss, val_acc = evaluate(
-            model, val_loader, criterion, device
+        val_loss, val_acc, val_recall = run_epoch(
+            model, val_loader, device
         )
+
+        scheduler.step(val_loss)
+
+        is_best = val_loss < best_val_loss 
+
+        if is_best:
+            best_val_loss = val_loss
+            torch.save(model.state_dict(), best_model_path)
+            print("✅ Best model saved")
+
+        with open(metrics_path, "a") as f:
+            f.write(
+                f"{epoch+1},"
+                f"{train_loss:.6f},{train_acc:.6f},{train_recall:.6f},"
+                f"{val_loss:.6f},{val_acc:.6f},{val_recall:.6f},"
+                f"{int(is_best)}\n"
+            )
 
         print(
             f"Epoch {epoch+1}/{num_epochs} | "
-            f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | "
-            f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}"
+            f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | Train Recall: {train_recall:.4f} | "
+            f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f} | Val Recall: {val_recall:.4f}"
         )
 
-    test_loss, test_acc = evaluate(model, test_loader, criterion, device)
-    print(f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
+    torch.save(model.state_dict(), final_model_path)
+    print(f"📦 Final model saved: {final_model_path}")
+
+    # --- Evaluierung des besten Modells ---
+    model.load_state_dict(torch.load(best_model_path, map_location=device))
+    print("✅ Best model loaded for test evaluation")
+
+    test_loss, test_acc, test_recall = run_epoch(
+        model, test_loader, device
+    )
+    print(
+        f"Test Loss: {test_loss:.4f}, "
+        f"Test Acc: {test_acc:.4f}, "
+        f"Test Recall: {test_recall:.4f}"
+    )
+    with open(metrics_path, "a") as f:
+        f.write("\n")
+        f.write(f"test_loss={test_loss:.6f}\n")
+        f.write(f"test_acc={test_acc:.6f}\n")
+        f.write(f"test_recall={test_recall:.6f}\n")
 
 
 if __name__ == "__main__":
