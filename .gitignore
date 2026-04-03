@@ -1,0 +1,6 @@
+.venv
+
+/swissimage_annotator
+
+# Daten
+/data/
