@@ -2,5 +2,8 @@
 
 /swissimage_annotator
 
-# Daten
+# Daten (lokal)
 /data/
+
+# Betriebssystem-Dateien
+.DS_Store
