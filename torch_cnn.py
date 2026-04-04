@@ -16,27 +16,36 @@ class BaseClassifier(nn.Module):
         raise NotImplementedError
 
 
-class _SimpleCNNBackboneMixin:
-    """Architektur mit 3 Blocks, jeweils mit Conv Layer, Aktivierungsfunktion und Pooling"""
-    def _init_backbone(self):
+class _CNNBackboneMixin:
+    """Architektur mit 3 Blocks, jeweils mit Conv Layer, Aktivierungsfunktion und Pooling
+    + Batch Normalization
+    + Dropout Rate
+    """
+    def _init_backbone(self, dropout_rate=0.3):
         self.features = nn.Sequential(
             # - Input Layer -
             nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2),
+            nn.Dropout2d(p=dropout_rate),
 
             # - Hidden Layer -
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2),
+            nn.Dropout2d(p=dropout_rate),
 
             # - Hidden Layer -
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(2),
+            nn.Dropout2d(p=dropout_rate),
         )
 
-        # - Verdichtung - 
+        # - Verdichtung -
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = nn.Flatten()
 
@@ -47,7 +56,7 @@ class _SimpleCNNBackboneMixin:
         return x
 
 
-class SimpleCNNCrossEntropy(BaseClassifier, _SimpleCNNBackboneMixin):
+class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
     """
     Binary oder Multiclass mit CrossEntropyLoss.
     Output: [batch_size, num_classes]
@@ -57,7 +66,7 @@ class SimpleCNNCrossEntropy(BaseClassifier, _SimpleCNNBackboneMixin):
         super().__init__()
         self._init_backbone()
 
-        # - Output Layer -
+        # Output Layer
         self.head = nn.Linear(128, num_classes)
 
         if class_weights is not None:
@@ -68,7 +77,8 @@ class SimpleCNNCrossEntropy(BaseClassifier, _SimpleCNNBackboneMixin):
         x = self.forward_features(x)
         x = self.head(x)
         return x
-
+    
+    # Loss Function definieren
     def compute_loss(self, outputs, labels):
         weight = self.class_weights
         if weight is not None:
@@ -79,7 +89,7 @@ class SimpleCNNCrossEntropy(BaseClassifier, _SimpleCNNBackboneMixin):
         return outputs.argmax(dim=1)
 
 
-class SimpleCNNBinary(BaseClassifier, _SimpleCNNBackboneMixin):
+class CNNBinary(BaseClassifier, _CNNBackboneMixin):
     """
     Binary Classification mit BCEWithLogitsLoss.
     Output: [batch_size, 1]
@@ -89,7 +99,6 @@ class SimpleCNNBinary(BaseClassifier, _SimpleCNNBackboneMixin):
         super().__init__()
         self._init_backbone()
 
-        # - Output Layer -
         self.head = nn.Linear(128, 1)
 
         if pos_weight is not None:

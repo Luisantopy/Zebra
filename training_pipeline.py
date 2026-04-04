@@ -6,7 +6,6 @@ from pathlib import Path
 from datetime import datetime
 
 from data_augmentation import get_train_dataset, get_eval_dataset, get_loader
-from torch_cnn_simple import SimpleCNNBinary, SimpleCNNCrossEntropy
 from model_registry import build_model, get_model_type
 
 
@@ -23,9 +22,10 @@ def run_epoch(model, loader, device, optimizer=None):
     correct = 0
     total = 0
 
-    # für Recall
+    # für Konfusionsmatrix
     true_positive = 0
     false_negative = 0
+    false_positive = 0
 
     context = torch.enable_grad() if is_training else torch.no_grad()
 
@@ -50,18 +50,34 @@ def run_epoch(model, loader, device, optimizer=None):
             correct += (preds == labels).sum().item()
             total += labels.size(0)
 
-            # Recall
-            # positive Klasse = 1
             positive_label = getattr(model, "positive_label", 1)
+
             true_positive += ((preds == positive_label) & (labels == positive_label)).sum().item()
             false_negative += ((preds != positive_label) & (labels == positive_label)).sum().item()
+            false_positive += ((preds == positive_label) & (labels != positive_label)).sum().item()
 
     epoch_loss = running_loss / total
     epoch_acc = correct / total
-    recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0.0
 
+    recall = (
+        true_positive / (true_positive + false_negative)
+        if (true_positive + false_negative) > 0
+        else 0.0
+    )
 
-    return epoch_loss, epoch_acc, recall
+    precision = (
+        true_positive / (true_positive + false_positive)
+        if (true_positive + false_positive) > 0
+        else 0.0
+    )
+
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if (precision + recall) > 0
+        else 0.0
+    )
+
+    return epoch_loss, epoch_acc, recall, precision, f1
 
 
 # --- Experiment Umgebung erstellen ---
@@ -78,16 +94,21 @@ def setup_experiment():
 
 
 # --- Weighted Random Sampling ---
-def build_weighted_sampler(dataset):
+def build_weighted_sampler(dataset, alpha=0.25):
     class_counts = Counter(dataset.targets)
-    sample_weights = [1.0 / class_counts[label] for label in dataset.targets]
+
+    sample_weights = [
+        1.0 / (class_counts[label] ** alpha)
+        for label in dataset.targets
+    ]
     sample_weights = torch.DoubleTensor(sample_weights)
 
     sampler = WeightedRandomSampler(
         weights=sample_weights,
         num_samples=len(sample_weights),
-        replacement=True,
+        replacement=True
     )
+
     return sampler, class_counts
 
 
@@ -114,7 +135,8 @@ def main():
     print("Class mapping:", train_dataset.class_to_idx)
 
     # --- Weighted sampler für Trainingsdaten ---
-    train_sampler, class_counts = build_weighted_sampler(train_dataset)
+    alpha = 0.30
+    train_sampler, class_counts = build_weighted_sampler(train_dataset, alpha=alpha)
     print("Train class counts:", class_counts)
 
     # --- DataLoader ---
@@ -123,7 +145,7 @@ def main():
     test_loader = get_loader(test_dataset, batch_size=32)
 
     # --- Model ---
-    model_name = "cross_entropy"       # hier Modellname austauschen für anderes Modell, zB "cross_entropy" oder "binary_bce"
+    model_name = "binary_bce_simple"  # hier Modellname austauschen für anderes Modell aus registry, zB "cross_entropy" oder "binary_bce"
     model_type = get_model_type(model_name)
 
     if model_type == "binary":
@@ -141,10 +163,11 @@ def main():
 
     model = model.to(device)
 
-    # Lernrate anpasseb
+    # Lernrate anpassen
     lr = 1e-4
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
+    # aktuell nicht aktiv
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         mode="min",
@@ -158,47 +181,51 @@ def main():
     with open(exp_dir / "config.txt", "w") as f:
         f.write(f"model_name={model_name}\n")
         f.write(f"epochs={num_epochs}\n")
-        f.write("lr=1e-3\n")
+        f.write(f"lr={lr}\n")
         f.write("batch_size=32\n")
         f.write(f"classes={train_dataset.classes}\n")
         f.write(f"class_counts={dict(class_counts)}\n")
+        f.write(f"sampler_alpha={alpha}\n")
 
     # --- Metrics speichern
     with open(metrics_path, "w") as f:
-        f.write("epoch,train_loss,train_acc,train_recall,val_loss,val_acc,val_recall,best_model\n")
-
+        f.write(
+            "epoch,train_loss,train_acc,train_recall,train_precision,train_f1,"
+            "val_loss,val_acc,val_recall,val_precision,val_f1,best_model\n"
+        )
+        
     # --- Training ---    
-    best_val_loss = float("inf")
-
+    best_val_f1 = -1 
     for epoch in range(num_epochs):
-        train_loss, train_acc, train_recall = run_epoch(
+        train_loss, train_acc, train_recall, train_precision, train_f1 = run_epoch(
             model, train_loader, device, optimizer=optimizer
         )
-        val_loss, val_acc, val_recall = run_epoch(
+        val_loss, val_acc, val_recall, val_precision, val_f1 = run_epoch(
             model, val_loader, device
         )
 
-        scheduler.step(val_loss)
+        #scheduler.step(val_loss)
 
-        is_best = val_loss < best_val_loss 
-
-        if is_best:
-            best_val_loss = val_loss
+        if val_f1 > best_val_f1:
+            best_val_f1 = val_f1
             torch.save(model.state_dict(), best_model_path)
             print("✅ Best model saved")
 
         with open(metrics_path, "a") as f:
             f.write(
-                f"{epoch+1},"
-                f"{train_loss:.6f},{train_acc:.6f},{train_recall:.6f},"
-                f"{val_loss:.6f},{val_acc:.6f},{val_recall:.6f},"
-                f"{int(is_best)}\n"
+                f"Epoch {epoch+1}/{num_epochs} | "
+                f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | "
+                f"Train Recall: {train_recall:.4f} | Train Precision: {train_precision:.4f} | Train F1: {train_f1:.4f} | "
+                f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f} | "
+                f"Val Recall: {val_recall:.4f} | Val Precision: {val_precision:.4f} | Val F1: {val_f1:.4f}"
             )
 
         print(
             f"Epoch {epoch+1}/{num_epochs} | "
-            f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | Train Recall: {train_recall:.4f} | "
-            f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f} | Val Recall: {val_recall:.4f}"
+            f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | "
+            f"Train Recall: {train_recall:.4f} | Train Precision: {train_precision:.4f} | Train F1: {train_f1:.4f} | "
+            f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f} | "
+            f"Val Recall: {val_recall:.4f} | Val Precision: {val_precision:.4f} | Val F1: {val_f1:.4f}"
         )
 
     torch.save(model.state_dict(), final_model_path)
@@ -208,19 +235,26 @@ def main():
     model.load_state_dict(torch.load(best_model_path, map_location=device))
     print("✅ Best model loaded for test evaluation")
 
-    test_loss, test_acc, test_recall = run_epoch(
+    test_loss, test_acc, test_recall, test_precision, test_f1 = run_epoch(
         model, test_loader, device
     )
+
     print(
-        f"Test Loss: {test_loss:.4f}, "
-        f"Test Acc: {test_acc:.4f}, "
-        f"Test Recall: {test_recall:.4f}"
+        f"Test Loss: {test_loss:.4f} | "
+        f"Test Acc: {test_acc:.4f} | "
+        f"Test Recall: {test_recall:.4f} | "
+        f"Test Precision: {test_precision:.4f} | "
+        f"Test F1: {test_f1:.4f}"
     )
     with open(metrics_path, "a") as f:
-        f.write("\n")
-        f.write(f"test_loss={test_loss:.6f}\n")
-        f.write(f"test_acc={test_acc:.6f}\n")
-        f.write(f"test_recall={test_recall:.6f}\n")
+        f.write(
+            f"Test Loss: {test_loss:.4f} | "
+            f"Test Acc: {test_acc:.4f} | "
+            f"Test Recall: {test_recall:.4f} | "
+            f"Test Precision: {test_precision:.4f} | "
+            f"Test F1: {test_f1:.4f}"
+        )
+        
 
 
 if __name__ == "__main__":

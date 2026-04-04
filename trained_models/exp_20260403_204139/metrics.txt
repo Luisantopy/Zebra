@@ -1,0 +1,10 @@
+epoch,train_loss,train_acc,train_recall,val_loss,val_acc,val_recall,best_model
+Epoch: 1 | Train Loss: 0.6202 | Train Acc: 0.4656 | Train Recall: 0.8454 | Val Loss: 0.6246 | Val Acc: 0.6551 | Val Recall: 0.9138Aktuell bestes Modell: 1
+Epoch: 2 | Train Loss: 0.5440 | Train Acc: 0.6005 | Train Recall: 0.8778 | Val Loss: 0.7169 | Val Acc: 0.6167 | Val Recall: 0.9483Aktuell bestes Modell: 0
+Epoch: 3 | Train Loss: 0.5219 | Train Acc: 0.5993 | Train Recall: 0.8835 | Val Loss: 0.7147 | Val Acc: 0.6286 | Val Recall: 0.9483Aktuell bestes Modell: 0
+Epoch: 4 | Train Loss: 0.4981 | Train Acc: 0.5943 | Train Recall: 0.9179 | Val Loss: 0.6247 | Val Acc: 0.6890 | Val Recall: 0.8966Aktuell bestes Modell: 0
+Epoch: 5 | Train Loss: 0.5152 | Train Acc: 0.6359 | Train Recall: 0.8706 | Val Loss: 0.3909 | Val Acc: 0.8089 | Val Recall: 0.7069Aktuell bestes Modell: 1
+
+Test Loss: 0.403003
+Test Acc: 0.799405
+Test Recall: 0.701754
