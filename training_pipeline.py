@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 from collections import Counter
 from torch.utils.data import WeightedRandomSampler
 from pathlib import Path
@@ -135,7 +134,7 @@ def main():
     print("Class mapping:", train_dataset.class_to_idx)
 
     # --- Weighted sampler für Trainingsdaten ---
-    alpha = 0.30
+    alpha = 1.0
     train_sampler, class_counts = build_weighted_sampler(train_dataset, alpha=alpha)
     print("Train class counts:", class_counts)
 
@@ -145,7 +144,7 @@ def main():
     test_loader = get_loader(test_dataset, batch_size=32)
 
     # --- Model ---
-    model_name = "binary_bce_simple"  # hier Modellname austauschen für anderes Modell aus registry, zB "cross_entropy" oder "binary_bce"
+    model_name = "cross_entropy"  # hier Modellname austauschen für anderes Modell aus registry, zB "cross_entropy" oder "binary_bce"
     model_type = get_model_type(model_name)
 
     if model_type == "binary":
@@ -156,10 +155,7 @@ def main():
         model = build_model(model_name, num_classes=len(train_dataset.classes), pos_weight=pos_weight)
 
     elif model_type == "multiclass":
-        total = sum(class_counts.values())
-        class_weights = [total / class_counts[i] for i in range(len(train_dataset.classes))]
-
-        model = build_model(model_name, num_classes=len(train_dataset.classes), class_weights=class_weights)
+        model = build_model(model_name, num_classes=len(train_dataset.classes), class_weights=None)
 
     model = model.to(device)
 
@@ -217,7 +213,7 @@ def main():
                 f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | "
                 f"Train Recall: {train_recall:.4f} | Train Precision: {train_precision:.4f} | Train F1: {train_f1:.4f} | "
                 f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f} | "
-                f"Val Recall: {val_recall:.4f} | Val Precision: {val_precision:.4f} | Val F1: {val_f1:.4f}"
+                f"Val Recall: {val_recall:.4f} | Val Precision: {val_precision:.4f} | Val F1: {val_f1:.4f} \n"
             )
 
         print(
@@ -254,7 +250,6 @@ def main():
             f"Test Precision: {test_precision:.4f} | "
             f"Test F1: {test_f1:.4f}"
         )
-        
 
 
 if __name__ == "__main__":

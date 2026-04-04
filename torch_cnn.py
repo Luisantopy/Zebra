@@ -25,24 +25,18 @@ class _CNNBackboneMixin:
         self.features = nn.Sequential(
             # - Input Layer -
             nn.Conv2d(3, 32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            nn.Dropout2d(p=dropout_rate),
 
             # - Hidden Layer -
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            nn.Dropout2d(p=dropout_rate),
 
             # - Hidden Layer -
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            nn.Dropout2d(p=dropout_rate),
         )
 
         # - Verdichtung -
@@ -67,7 +61,12 @@ class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
         self._init_backbone()
 
         # Output Layer
-        self.head = nn.Linear(128, num_classes)
+        self.head = nn.Sequential(
+            nn.Linear(128, 64),
+            nn.ReLU(),
+           # nn.Dropout(0.2),
+            nn.Linear(64, num_classes),
+        )
 
         if class_weights is not None:
             class_weights = torch.as_tensor(class_weights, dtype=torch.float32)

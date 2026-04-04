@@ -60,3 +60,118 @@ def plot(imgs, row_title=None, bbox_width=3, **imshow_kwargs):
             axs[row_idx, 0].set(ylabel=row_title[row_idx])
 
     plt.tight_layout()
+
+
+# --- Threshold helpers ---
+@torch.no_grad()
+def evaluate_thresholds(model, loader, device, thresholds=None, positive_label=1):
+    if thresholds is None:
+        thresholds = [0.5, 0.6, 0.7, 0.8, 0.9]
+
+    model.eval()
+    results = []
+
+    for threshold in thresholds:
+        correct = 0
+        total = 0
+
+        true_positive = 0
+        false_negative = 0
+        false_positive = 0
+
+        for images, labels in loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs = model(images)
+
+            # Wahrscheinlichkeit für Klasse 1 = "y"
+            probs = torch.softmax(outputs, dim=1)[:, positive_label]
+
+            preds = (probs >= threshold).long()
+
+            correct += (preds == labels).sum().item()
+            total += labels.size(0)
+
+            true_positive += ((preds == positive_label) & (labels == positive_label)).sum().item()
+            false_negative += ((preds != positive_label) & (labels == positive_label)).sum().item()
+            false_positive += ((preds == positive_label) & (labels != positive_label)).sum().item()
+
+        acc = correct / total if total > 0 else 0.0
+
+        recall = (
+            true_positive / (true_positive + false_negative)
+            if (true_positive + false_negative) > 0
+            else 0.0
+        )
+
+        precision = (
+            true_positive / (true_positive + false_positive)
+            if (true_positive + false_positive) > 0
+            else 0.0
+        )
+
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if (precision + recall) > 0
+            else 0.0
+        )
+
+        results.append({
+            "threshold": threshold,
+            "acc": acc,
+            "recall": recall,
+            "precision": precision,
+            "f1": f1,
+        })
+
+    return results
+
+
+@torch.no_grad()
+def evaluate_with_threshold(model, loader, device, threshold=0.5, positive_label=1):
+    model.eval()
+
+    correct = 0
+    total = 0
+
+    true_positive = 0
+    false_negative = 0
+    false_positive = 0
+
+    for images, labels in loader:
+        images = images.to(device)
+        labels = labels.to(device)
+
+        outputs = model(images)
+        probs = torch.softmax(outputs, dim=1)[:, positive_label]
+        preds = (probs >= threshold).long()
+
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+
+        true_positive += ((preds == positive_label) & (labels == positive_label)).sum().item()
+        false_negative += ((preds != positive_label) & (labels == positive_label)).sum().item()
+        false_positive += ((preds == positive_label) & (labels != positive_label)).sum().item()
+
+    acc = correct / total if total > 0 else 0.0
+
+    recall = (
+        true_positive / (true_positive + false_negative)
+        if (true_positive + false_negative) > 0
+        else 0.0
+    )
+
+    precision = (
+        true_positive / (true_positive + false_positive)
+        if (true_positive + false_positive) > 0
+        else 0.0
+    )
+
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if (precision + recall) > 0
+        else 0.0
+    )
+
+    return acc, recall, precision, f1

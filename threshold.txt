@@ -1,0 +1,30 @@
+Device: mps
+📁 Experiment directory: trained_models/exp_20260404_122449
+Classes: ['n', 'y']
+Class mapping: {'n': 0, 'y': 1}
+Train class counts: Counter({0: 15410, 1: 270})
+✅ Best model saved
+Epoch 1/5 | Train Loss: 0.5707 | Train Acc: 0.6977 | Train Recall: 0.7328 | Train Precision: 0.6853 | Train F1: 0.7082 | Val Loss: 0.4303 | Val Acc: 0.6997 | Val Recall: 0.8793 | Val Precision: 0.0484 | Val F1: 0.0918
+✅ Best model saved
+Epoch 2/5 | Train Loss: 0.4940 | Train Acc: 0.7575 | Train Recall: 0.8857 | Train Precision: 0.7040 | Train F1: 0.7845 | Val Loss: 0.3513 | Val Acc: 0.7446 | Val Recall: 0.8621 | Val Precision: 0.0556 | Val F1: 0.1044
+Epoch 3/5 | Train Loss: 0.4725 | Train Acc: 0.7680 | Train Recall: 0.9075 | Train Precision: 0.7077 | Train F1: 0.7952 | Val Loss: 0.3732 | Val Acc: 0.7295 | Val Recall: 0.8966 | Val Precision: 0.0545 | Val F1: 0.1027
+✅ Best model saved
+Epoch 4/5 | Train Loss: 0.4541 | Train Acc: 0.7807 | Train Recall: 0.9223 | Train Precision: 0.7184 | Train F1: 0.8077 | Val Loss: 0.3607 | Val Acc: 0.7640 | Val Recall: 0.8448 | Val Precision: 0.0588 | Val F1: 0.1100
+✅ Best model saved
+Epoch 5/5 | Train Loss: 0.4368 | Train Acc: 0.7943 | Train Recall: 0.9309 | Train Precision: 0.7328 | Train F1: 0.8200 | Val Loss: 0.2287 | Val Acc: 0.8598 | Val Recall: 0.7414 | Val Precision: 0.0862 | Val F1: 0.1544
+📦 Final model saved: trained_models/exp_20260404_122449/final_model.pth
+✅ Best model loaded for test evaluation
+
+Threshold tuning on validation set:
+Threshold: 0.30 | Acc: 0.7735 | Recall: 0.8448 | Precision: 0.0612 | F1: 0.1141
+Threshold: 0.40 | Acc: 0.8187 | Recall: 0.7759 | Precision: 0.0702 | F1: 0.1288
+Threshold: 0.50 | Acc: 0.8598 | Recall: 0.7414 | Precision: 0.0862 | F1: 0.1544
+Threshold: 0.60 | Acc: 0.9003 | Recall: 0.5517 | Precision: 0.0938 | F1: 0.1604
+Threshold: 0.70 | Acc: 0.9423 | Recall: 0.1379 | Precision: 0.0526 | F1: 0.0762
+Threshold: 0.80 | Acc: 0.9804 | Recall: 0.0000 | Precision: 0.0000 | F1: 0.0000
+Threshold: 0.90 | Acc: 0.9821 | Recall: 0.0000 | Precision: 0.0000 | F1: 0.0000
+
+Best threshold on val set: 0.60
+{'threshold': 0.6, 'acc': 0.9002976190476191, 'recall': 0.5517241379310345, 'precision': 0.093841642228739, 'f1': 0.16040100250626566}
+
+Test with tuned threshold=0.60 | Acc: 0.8902 | Recall: 0.3860 | Precision: 0.0618 | F1: 0.1065

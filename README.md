@@ -32,10 +32,19 @@ uv run python predict_single.py data/test/y/2758700_1191950.png --weights traine
 1. Weighted Random Sampling: *alpha* optimiert  
     *alpha* zu niedrig: hohe Accuracy aber Recall niedrig   ––> Sampler zu schwach
     *alpha* zu gross: hoher Recall aber Accuracy niedrig    ––> Sampler zu stark
-    *alpha* = 0.30
+    *alpha* = 0.90
 
-3. Loss Function: *cross_entropy* und *binary_bce* verglichen
+2. Loss Function: *cross_entropy* und *binary_bce* verglichen
     *cross_entropy* leicht besser
+
+3. Output Layer erweitern von Linear zu: 
+    + Linear 128
+    + ReLu
+    + Linear 64
+
+4. Threshold Tuning: 
+    keine deutliche Verbesserung des F1 Scores, aber Recall fällt stark ab von 0.61 auf 0.38
+    ––> kein sinnvoller Hebel, die Entscheidungsschwelle ist nicht das Kernproblem. 
 
 ### Bemerkungen: 
 - wegen stark unbalancierter Klassen wurde WeightedRandomSampling verwendet; eine zusätzliche Gewichtung der Loss Funktion hat sich als kontraproduktiv erwiesen
