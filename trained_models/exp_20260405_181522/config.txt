@@ -1,0 +1,8 @@
+model_name=cross_entropy
+epochs=15
+lr=0.05366565808095135
+batch_size=32
+classes=['n', 'y']
+class_counts={0: 15410, 1: 270}
+sampler_alpha=0.6245467217736109
+seed=42

@@ -1,117 +1,25 @@
 import torch
-from collections import Counter
-from torch.utils.data import WeightedRandomSampler
-from pathlib import Path
-from datetime import datetime
+import optuna
+import numpy as np
 
 from data_augmentation import get_train_dataset, get_eval_dataset, get_loader
 from model_registry import build_model, get_model_type
+from helpers import (
+    EarlyStopping, 
+    run_epoch, setup_experiment, build_weighted_sampler, 
+    evaluate_with_threshold, evaluate_thresholds, select_best_threshold,
+    set_seed
+)
 
 
-# --- Training + Validation ---
-def run_epoch(model, loader, device, optimizer=None):
-    is_training = optimizer is not None
+def run_experiment(seed, config):
+    set_seed(seed=seed)
+    lr = config["lr"]
+    optimizer_name = config["optimizer"]
+    alpha = config["alpha"]
+    min_recall = config["min_recall"]
+    momentum = config.get("momentum", None)
 
-    if is_training:
-        model.train()
-    else:
-        model.eval()
-
-    running_loss = 0.0
-    correct = 0
-    total = 0
-
-    # für Konfusionsmatrix
-    true_positive = 0
-    false_negative = 0
-    false_positive = 0
-
-    context = torch.enable_grad() if is_training else torch.no_grad()
-
-    with context:
-        for images, labels in loader:
-            images = images.to(device)
-            labels = labels.to(device)
-
-            if is_training:
-                optimizer.zero_grad()
-
-            outputs = model(images)
-            loss = model.compute_loss(outputs, labels)
-
-            if is_training:
-                loss.backward()
-                optimizer.step()
-
-            preds = model.predict(outputs)
-
-            running_loss += loss.item() * images.size(0)
-            correct += (preds == labels).sum().item()
-            total += labels.size(0)
-
-            positive_label = getattr(model, "positive_label", 1)
-
-            true_positive += ((preds == positive_label) & (labels == positive_label)).sum().item()
-            false_negative += ((preds != positive_label) & (labels == positive_label)).sum().item()
-            false_positive += ((preds == positive_label) & (labels != positive_label)).sum().item()
-
-    epoch_loss = running_loss / total
-    epoch_acc = correct / total
-
-    recall = (
-        true_positive / (true_positive + false_negative)
-        if (true_positive + false_negative) > 0
-        else 0.0
-    )
-
-    precision = (
-        true_positive / (true_positive + false_positive)
-        if (true_positive + false_positive) > 0
-        else 0.0
-    )
-
-    f1 = (
-        2 * precision * recall / (precision + recall)
-        if (precision + recall) > 0
-        else 0.0
-    )
-
-    return epoch_loss, epoch_acc, recall, precision, f1
-
-
-# --- Experiment Umgebung erstellen ---
-def setup_experiment():
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    exp_dir = Path("trained_models") / f"exp_{timestamp}"
-    exp_dir.mkdir(parents=True, exist_ok=True)
-
-    best_model_path = exp_dir / "best_model.pth"
-    final_model_path = exp_dir / "final_model.pth"
-    metrics_path = exp_dir / "metrics.txt"
-
-    return exp_dir, best_model_path, final_model_path, metrics_path
-
-
-# --- Weighted Random Sampling ---
-def build_weighted_sampler(dataset, alpha=0.25):
-    class_counts = Counter(dataset.targets)
-
-    sample_weights = [
-        1.0 / (class_counts[label] ** alpha)
-        for label in dataset.targets
-    ]
-    sample_weights = torch.DoubleTensor(sample_weights)
-
-    sampler = WeightedRandomSampler(
-        weights=sample_weights,
-        num_samples=len(sample_weights),
-        replacement=True
-    )
-
-    return sampler, class_counts
-
-
-def main():
     # --- Device definieren
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -130,21 +38,17 @@ def main():
     train_dataset = get_train_dataset("data/train")
     val_dataset   = get_eval_dataset("data/val")
     test_dataset  = get_eval_dataset("data/test")
-    print("Classes:", train_dataset.classes)
-    print("Class mapping:", train_dataset.class_to_idx)
 
     # --- Weighted sampler für Trainingsdaten ---
-    alpha = 1.0
     train_sampler, class_counts = build_weighted_sampler(train_dataset, alpha=alpha)
-    print("Train class counts:", class_counts)
 
     # --- DataLoader ---
-    train_loader = get_loader(train_dataset, batch_size=32, sampler=train_sampler)
-    val_loader = get_loader(val_dataset, batch_size=32)
-    test_loader = get_loader(test_dataset, batch_size=32)
+    train_loader = get_loader(train_dataset, batch_size=32, sampler=train_sampler, seed=seed)
+    val_loader = get_loader(val_dataset, batch_size=32, seed=seed)
+    test_loader = get_loader(test_dataset, batch_size=32, seed=seed)
 
     # --- Model ---
-    model_name = "cross_entropy"  # hier Modellname austauschen für anderes Modell aus registry, zB "cross_entropy" oder "binary_bce"
+    model_name = "cross_entropy"  # hier Modellname austauschen für anderes Modell aus registry, zB "cross_entropy" oder "cross_entropy_simple"
     model_type = get_model_type(model_name)
 
     if model_type == "binary":
@@ -159,19 +63,28 @@ def main():
 
     model = model.to(device)
 
-    # Lernrate anpassen
-    lr = 1e-4
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    # --- Optimizer ---
+    if optimizer_name == "sgd":
+        optimizer = torch.optim.SGD(
+            model.parameters(),
+            lr=lr,
+            momentum=momentum
+        )
+    else:
+        optimizer = torch.optim.Adam(
+            model.parameters(),
+            lr=lr
+        )
+    
+    num_epochs = 15
 
-    # aktuell nicht aktiv
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        mode="min",
-        factor=0.5,
-        patience=2
-    )
-
-    num_epochs = 5
+    # --- Scheduluer ---
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer,
+    #     mode="min",
+    #     factor=0.5,
+    #     patience=2
+    # )
 
     # --- Config speichern ---
     with open(exp_dir / "config.txt", "w") as f:
@@ -182,16 +95,11 @@ def main():
         f.write(f"classes={train_dataset.classes}\n")
         f.write(f"class_counts={dict(class_counts)}\n")
         f.write(f"sampler_alpha={alpha}\n")
-
-    # --- Metrics speichern
-    with open(metrics_path, "w") as f:
-        f.write(
-            "epoch,train_loss,train_acc,train_recall,train_precision,train_f1,"
-            "val_loss,val_acc,val_recall,val_precision,val_f1,best_model\n"
-        )
+        f.write(f"seed={seed}\n")
         
     # --- Training ---    
-    best_val_f1 = -1 
+    early_stopping = EarlyStopping(patience=2, min_delta=0.001, mode="max")
+
     for epoch in range(num_epochs):
         train_loss, train_acc, train_recall, train_precision, train_f1 = run_epoch(
             model, train_loader, device, optimizer=optimizer
@@ -202,8 +110,8 @@ def main():
 
         #scheduler.step(val_loss)
 
-        if val_f1 > best_val_f1:
-            best_val_f1 = val_f1
+        improved = early_stopping(val_f1)
+        if improved:
             torch.save(model.state_dict(), best_model_path)
             print("✅ Best model saved")
 
@@ -216,40 +124,154 @@ def main():
                 f"Val Recall: {val_recall:.4f} | Val Precision: {val_precision:.4f} | Val F1: {val_f1:.4f} \n"
             )
 
-        print(
-            f"Epoch {epoch+1}/{num_epochs} | "
-            f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | "
-            f"Train Recall: {train_recall:.4f} | Train Precision: {train_precision:.4f} | Train F1: {train_f1:.4f} | "
-            f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f} | "
-            f"Val Recall: {val_recall:.4f} | Val Precision: {val_precision:.4f} | Val F1: {val_f1:.4f}"
-        )
+        if early_stopping.stop:
+            print(f"⏹ Early stopping after epoch {epoch+1}")
+            break
 
     torch.save(model.state_dict(), final_model_path)
     print(f"📦 Final model saved: {final_model_path}")
 
-    # --- Evaluierung des besten Modells ---
+    # --- Bestes Modell laden ---
     model.load_state_dict(torch.load(best_model_path, map_location=device))
     print("✅ Best model loaded for test evaluation")
 
-    test_loss, test_acc, test_recall, test_precision, test_f1 = run_epoch(
-        model, test_loader, device
+    # --- Threshold Tuning ---
+    threshold_results = evaluate_thresholds(model, val_loader, device)
+    best = select_best_threshold(
+        threshold_results,
+        min_recall=min_recall,      
+        metric="f1"   
+    )
+    test_acc, test_recall, test_precision, test_f1 = evaluate_with_threshold(
+        model,
+        test_loader,
+        device,
+        threshold=best["threshold"]
     )
 
-    print(
-        f"Test Loss: {test_loss:.4f} | "
-        f"Test Acc: {test_acc:.4f} | "
-        f"Test Recall: {test_recall:.4f} | "
-        f"Test Precision: {test_precision:.4f} | "
-        f"Test F1: {test_f1:.4f}"
-    )
     with open(metrics_path, "a") as f:
+        f.write("\nThreshold tuning on validation set:\n")
+
+        for r in threshold_results:
+            f.write(
+                f"Threshold: {r['threshold']:.2f} | "
+                f"Acc: {r['acc']:.4f} | "
+                f"Recall: {r['recall']:.4f} | "
+                f"Precision: {r['precision']:.4f} | "
+                f"F1: {r['f1']:.4f}\n"
+            )
         f.write(
-            f"Test Loss: {test_loss:.4f} | "
-            f"Test Acc: {test_acc:.4f} | "
-            f"Test Recall: {test_recall:.4f} | "
-            f"Test Precision: {test_precision:.4f} | "
-            f"Test F1: {test_f1:.4f}"
+            f"\nBest threshold (min_recall constraint): {best['threshold']:.2f} | "
+            f"Recall: {best['recall']:.4f} | "
+            f"Precision: {best['precision']:.4f} | "
+            f"F1: {best['f1']:.4f}\n"
         )
+        f.write(
+            f"Test with tuned threshold={best['threshold']:.2f} | "
+            f"Acc: {test_acc:.4f} | "
+            f"Recall: {test_recall:.4f} | "
+            f"Precision: {test_precision:.4f} | "
+            f"F1: {test_f1:.4f}\n"
+        )
+
+    return {
+        "seed": seed,
+        "lr": lr,
+        "threshold": best["threshold"],
+        "val_f1": best["f1"],
+        "test_acc": test_acc,
+        "test_recall": test_recall,
+        "test_precision": test_precision,
+        "test_f1": test_f1,
+    }
+
+
+# def run_multiple_seeds(lr, seeds=[10, 20, 30, 40, 50]):
+#     results = []
+
+#     for seed in seeds:
+#         print(f"\n--- Running seed {seed} (lr={lr}) ---")
+#         res = run_experiment(seed, lr)
+#         results.append(res)
+#         print(f"Seed {seed} → Test F1: {res['test_f1']:.4f}")
+
+#     return results
+
+
+def objective(trial):
+    optimizer_name = "sgd" # trial.suggest_categorical("optimizer", ["adam", "sgd"])
+    lr = trial.suggest_float("lr", 0.03, 0.08, log=True)
+    alpha = trial.suggest_float("alpha", 0.55, 0.70)
+    min_recall = trial.suggest_float("min_recall", 0.33, 0.45)
+
+    config = {
+        "optimizer": optimizer_name,
+        "lr": lr,
+        "alpha": alpha,
+        "min_recall": min_recall,
+    }
+
+    if optimizer_name == "sgd":
+        config["momentum"] = trial.suggest_float("momentum", 0.82, 0.88)
+
+    result = run_experiment(seed=42, config=config)
+
+    return result["val_f1"]
+
+
+def evaluate_best_trial(study, seeds=[10, 20, 30, 40, 50]):
+    best_params = study.best_trial.params
+
+    print("\n🚀 Evaluating best trial with multiple seeds")
+    print("Best params:", best_params)
+
+    results = []
+
+    for seed in seeds:
+        print(f"\n--- Seed {seed} ---")
+
+        # Config bauen
+        config = {
+            "optimizer": "sgd",
+            "lr": best_params["lr"],
+            "alpha": best_params["alpha"],
+            "min_recall": best_params["min_recall"],
+            "momentum": best_params["momentum"],
+        }
+
+        res = run_experiment(seed=seed, config=config)
+        results.append(res)
+
+        print(
+            f"Seed {seed} → "
+            f"Test F1: {res['test_f1']:.4f} | "
+            f"Recall: {res['test_recall']:.4f} | "
+            f"Precision: {res['test_precision']:.4f}"
+        )
+
+    # --- Aggregation ---
+    avg_f1 = np.mean([r["test_f1"] for r in results])
+    std_f1 = np.std([r["test_f1"] for r in results])
+
+    avg_recall = np.mean([r["test_recall"] for r in results])
+    avg_precision = np.mean([r["test_precision"] for r in results])
+
+    print("\n📊 Summary over seeds:")
+    print(f"Avg Test F1: {avg_f1:.4f} ± {std_f1:.4f}")
+    print(f"Avg Recall:  {avg_recall:.4f}")
+    print(f"Avg Precision: {avg_precision:.4f}")
+
+    return results
+
+def main():
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=5)
+
+    print("Best trial:")
+    print(study.best_trial.params)
+    print(study.best_trial.value)
+
+    evaluate_best_trial(study=study)
 
 
 if __name__ == "__main__":

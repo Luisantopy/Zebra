@@ -1,5 +1,5 @@
 from torch_cnn_simple import SimpleCNNCrossEntropy, SimpleCNNBinary
-from torch_cnn import CNNBinary, CNNCrossEntropy
+from torch_cnn import CNNCrossEntropy
 
 
 MODEL_REGISTRY = {
@@ -14,10 +14,6 @@ MODEL_REGISTRY = {
     "cross_entropy": {
         "builder": lambda num_classes, **kwargs: CNNCrossEntropy(num_classes=num_classes, **kwargs),
         "type": "multiclass",
-    },
-    "binary_bce": {
-        "builder": lambda num_classes, **kwargs: CNNBinary(**kwargs),
-        "type": "binary",
     },
 }
 

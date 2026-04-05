@@ -1,6 +1,0 @@
-model_name=binary_bce
-epochs=5
-lr=1e-3
-batch_size=32
-classes=['n', 'y']
-class_counts={0: 15410, 1: 270}

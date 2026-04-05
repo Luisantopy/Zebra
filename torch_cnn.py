@@ -17,24 +17,29 @@ class BaseClassifier(nn.Module):
 
 
 class _CNNBackboneMixin:
-    """Architektur mit 3 Blocks, jeweils mit Conv Layer, Aktivierungsfunktion und Pooling
-    + Batch Normalization
-    + Dropout Rate
+    """Architektur mit 3 Blocks:
+    + Conv Layer
+    + Aktivierungsfunktion
+    + Pooling
+    und Verdichtung. 
     """
-    def _init_backbone(self, dropout_rate=0.3):
+    def _init_backbone(self):
         self.features = nn.Sequential(
             # - Input Layer -
             nn.Conv2d(3, 32, kernel_size=3, padding=1),
+           # nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2),
 
             # - Hidden Layer -
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
+         #   nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2),
 
             # - Hidden Layer -
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
+          #  nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(2),
         )
@@ -52,7 +57,8 @@ class _CNNBackboneMixin:
 
 class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
     """
-    Binary oder Multiclass mit CrossEntropyLoss.
+    Binary Classification mit CrossEntropyLoss.
+    KEINE Aktivierungsfunktion im Output Layer, CrossEntropy übernimmt Softmax Logik
     Output: [batch_size, num_classes]
     """
 
@@ -64,7 +70,6 @@ class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
         self.head = nn.Sequential(
             nn.Linear(128, 64),
             nn.ReLU(),
-           # nn.Dropout(0.2),
             nn.Linear(64, num_classes),
         )
 
@@ -88,34 +93,34 @@ class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
         return outputs.argmax(dim=1)
 
 
-class CNNBinary(BaseClassifier, _CNNBackboneMixin):
-    """
-    Binary Classification mit BCEWithLogitsLoss.
-    Output: [batch_size, 1]
-    """
+# class CNNBinary(BaseClassifier, _CNNBackboneMixin):
+#     """
+#     Binary Classification mit BCEWithLogitsLoss.
+#     Output: [batch_size, 1]
+#     """
 
-    def __init__(self, pos_weight=None):
-        super().__init__()
-        self._init_backbone()
+#     def __init__(self, pos_weight=None):
+#         super().__init__()
+#         self._init_backbone()
 
-        self.head = nn.Linear(128, 1)
+#         self.head = nn.Linear(128, 1)
 
-        if pos_weight is not None:
-            pos_weight = torch.as_tensor([pos_weight], dtype=torch.float32)
-        self.pos_weight = pos_weight
+#         if pos_weight is not None:
+#             pos_weight = torch.as_tensor([pos_weight], dtype=torch.float32)
+#         self.pos_weight = pos_weight
 
-    def forward(self, x):
-        x = self.forward_features(x)
-        x = self.head(x)
-        return x
+#     def forward(self, x):
+#         x = self.forward_features(x)
+#         x = self.head(x)
+#         return x
 
-    def compute_loss(self, outputs, labels):
-        labels = labels.float().unsqueeze(1)
-        pos_weight = self.pos_weight
-        if pos_weight is not None:
-            pos_weight = pos_weight.to(outputs.device)
-        return F.binary_cross_entropy_with_logits(outputs, labels, pos_weight=pos_weight)
+#     def compute_loss(self, outputs, labels):
+#         labels = labels.float().unsqueeze(1)
+#         pos_weight = self.pos_weight
+#         if pos_weight is not None:
+#             pos_weight = pos_weight.to(outputs.device)
+#         return F.binary_cross_entropy_with_logits(outputs, labels, pos_weight=pos_weight)
 
-    def predict(self, outputs):
-        probs = torch.sigmoid(outputs)
-        return (probs >= 0.5).long().squeeze(1)
+#     def predict(self, outputs):
+#         probs = torch.sigmoid(outputs)
+#         return (probs >= 0.5).long().squeeze(1)

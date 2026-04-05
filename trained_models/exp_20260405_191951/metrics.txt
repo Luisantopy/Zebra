@@ -1,0 +1,27 @@
+Epoch 1/15 | Train Loss: 0.3647 | Train Acc: 0.8320 | Train Recall: 0.0865 | Train Precision: 0.6648 | Train F1: 0.1531 | Val Loss: 0.1651 | Val Acc: 0.9827 | Val Recall: 0.0000 | Val Precision: 0.0000 | Val F1: 0.0000 
+Epoch 2/15 | Train Loss: 0.2807 | Train Acc: 0.8587 | Train Recall: 0.4070 | Train Precision: 0.7057 | Train F1: 0.5163 | Val Loss: 0.1372 | Val Acc: 0.9643 | Val Recall: 0.6207 | Val Precision: 0.2687 | Val F1: 0.3750 
+Epoch 3/15 | Train Loss: 0.2263 | Train Acc: 0.9071 | Train Recall: 0.6723 | Train Precision: 0.7804 | Train F1: 0.7223 | Val Loss: 0.1034 | Val Acc: 0.9702 | Val Recall: 0.7414 | Val Precision: 0.3359 | Val F1: 0.4624 
+Epoch 4/15 | Train Loss: 0.0700 | Train Acc: 0.9776 | Train Recall: 0.9318 | Train Precision: 0.9440 | Train F1: 0.9379 | Val Loss: 0.1735 | Val Acc: 0.9613 | Val Recall: 0.0172 | Val Precision: 0.0135 | Val F1: 0.0152 
+Epoch 5/15 | Train Loss: 0.0725 | Train Acc: 0.9776 | Train Recall: 0.9420 | Train Precision: 0.9323 | Train F1: 0.9371 | Val Loss: 0.1908 | Val Acc: 0.9792 | Val Recall: 0.1552 | Val Precision: 0.3000 | Val F1: 0.2045 
+
+Threshold tuning on validation set:
+Threshold: 0.10 | Acc: 0.7729 | Recall: 0.9138 | Precision: 0.0654 | F1: 0.1220
+Threshold: 0.15 | Acc: 0.8321 | Recall: 0.8966 | Precision: 0.0852 | F1: 0.1557
+Threshold: 0.20 | Acc: 0.8765 | Recall: 0.8793 | Precision: 0.1111 | F1: 0.1973
+Threshold: 0.25 | Acc: 0.9057 | Recall: 0.8621 | Precision: 0.1393 | F1: 0.2398
+Threshold: 0.30 | Acc: 0.9274 | Recall: 0.8276 | Precision: 0.1702 | F1: 0.2824
+Threshold: 0.35 | Acc: 0.9446 | Recall: 0.7931 | Precision: 0.2091 | F1: 0.3309
+Threshold: 0.40 | Acc: 0.9554 | Recall: 0.7931 | Precision: 0.2500 | F1: 0.3802
+Threshold: 0.45 | Acc: 0.9640 | Recall: 0.7759 | Precision: 0.2941 | F1: 0.4265
+Threshold: 0.50 | Acc: 0.9702 | Recall: 0.7414 | Precision: 0.3359 | F1: 0.4624
+Threshold: 0.55 | Acc: 0.9771 | Recall: 0.7414 | Precision: 0.4095 | F1: 0.5276
+Threshold: 0.60 | Acc: 0.9807 | Recall: 0.6897 | Precision: 0.4598 | F1: 0.5517
+Threshold: 0.65 | Acc: 0.9854 | Recall: 0.6724 | Precision: 0.5652 | F1: 0.6142
+Threshold: 0.70 | Acc: 0.9875 | Recall: 0.6379 | Precision: 0.6379 | F1: 0.6379
+Threshold: 0.75 | Acc: 0.9884 | Recall: 0.6207 | Precision: 0.6792 | F1: 0.6486
+Threshold: 0.80 | Acc: 0.9899 | Recall: 0.5690 | Precision: 0.7857 | F1: 0.6600
+Threshold: 0.85 | Acc: 0.9875 | Recall: 0.3621 | Precision: 0.8077 | F1: 0.5000
+Threshold: 0.90 | Acc: 0.9836 | Recall: 0.0690 | Precision: 0.8000 | F1: 0.1270
+
+Best threshold (min_recall constraint): 0.80 | Recall: 0.5690 | Precision: 0.7857 | F1: 0.6600
+Test with tuned threshold=0.80 | Acc: 0.9845 | Recall: 0.4211 | Precision: 0.5581 | F1: 0.4800

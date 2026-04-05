@@ -1,0 +1,7 @@
+epoch,train_loss,train_acc,train_recall,train_precision,train_f1,val_loss,val_acc,val_recall,val_precision,val_f1,best_model
+Epoch 1/5 | Train Loss: 0.4908 | Train Acc: 0.7706 | Train Recall: 0.8313 | Train Precision: 0.7436 | Train F1: 0.7850 | Val Loss: 0.2500 | Val Acc: 0.8696 | Val Recall: 0.5862 | Val Precision: 0.0759 | Val F1: 0.1344 
+Epoch 2/5 | Train Loss: 0.3151 | Train Acc: 0.8710 | Train Recall: 0.9207 | Train Precision: 0.8345 | Train F1: 0.8755 | Val Loss: 0.1794 | Val Acc: 0.9062 | Val Recall: 0.3966 | Val Precision: 0.0759 | Val F1: 0.1274 
+Epoch 3/5 | Train Loss: 0.2525 | Train Acc: 0.9015 | Train Recall: 0.9235 | Train Precision: 0.8868 | Train F1: 0.9048 | Val Loss: 0.1689 | Val Acc: 0.9238 | Val Recall: 0.3276 | Val Precision: 0.0805 | Val F1: 0.1293 
+Epoch 4/5 | Train Loss: 0.2462 | Train Acc: 0.9008 | Train Recall: 0.9150 | Train Precision: 0.8884 | Train F1: 0.9016 | Val Loss: 0.1089 | Val Acc: 0.9616 | Val Recall: 0.1207 | Val Precision: 0.0824 | Val F1: 0.0979 
+Epoch 5/5 | Train Loss: 0.2228 | Train Acc: 0.9121 | Train Recall: 0.9274 | Train Precision: 0.8995 | Train F1: 0.9132 | Val Loss: 0.2073 | Val Acc: 0.9036 | Val Recall: 0.3793 | Val Precision: 0.0710 | Val F1: 0.1196 
+Test Loss: 0.2576 | Test Acc: 0.8655 | Test Recall: 0.4912 | Test Precision: 0.0621 | Test F1: 0.1102
