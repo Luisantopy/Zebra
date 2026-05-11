@@ -26,8 +26,19 @@ class ConditionalImageFolder(datasets.ImageFolder):
         return image, label
 
 
-def get_train_dataset(root="data/train"):
+def get_train_dataset(root="data/train", y_aug_params=None):
     """Trainingsdaten laden, y stärker augmentieren als n"""
+    if y_aug_params is None:
+        y_aug_params = {
+            "hflip_p": 0.5,
+            "vflip_p": 0.2,
+            "brightness": 0.3,
+            "contrast": 0.5,
+            "saturation": 0.5,
+            "perspective": 0.2,
+            "rotation_deg": 20,
+        }
+    
     transform_n = v2.Compose([
         v2.ToImage(),
         v2.RandomHorizontalFlip(p=0.1),
@@ -38,11 +49,14 @@ def get_train_dataset(root="data/train"):
 
     transform_y = v2.Compose([
         v2.ToImage(),
-        v2.RandomHorizontalFlip(p=0.5),
-        v2.RandomVerticalFlip(p=0.2),
-        v2.ColorJitter(brightness=0.3, contrast=0.5, saturation=0.5),
-        v2.RandomPerspective(p=0.2),
-        v2.RandomRotation(20),
+        v2.RandomHorizontalFlip(p=y_aug_params["hflip_p"]),
+        v2.RandomVerticalFlip(p=y_aug_params["vflip_p"]),
+        v2.ColorJitter(
+            brightness=y_aug_params["brightness"], 
+            contrast=y_aug_params["contrast"], 
+            saturation=y_aug_params["saturation"]),
+        v2.RandomPerspective(p=y_aug_params["perspective"]),
+        v2.RandomRotation(y_aug_params["rotation_deg"]),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])

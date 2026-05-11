@@ -14,13 +14,16 @@ from helpers import (
 
 def run_experiment(seed, config):
     set_seed(seed=seed)
-    lr = config["lr"]
-    optimizer_name = config["optimizer"]
-    alpha = config["alpha"]
-    min_recall = config["min_recall"]
-    momentum = config.get("momentum", None)
 
-    # --- Device definieren
+    # --- Optimierungsparameter ---
+    lr = config["lr"]
+    alpha = config["alpha"]
+    optimizer_name = "sgd"
+    min_recall = config["min_recall"]
+    momentum = config["momentum"]
+    #y_aug_params = config["y_aug_params"]
+
+    # --- Device definieren ---
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
@@ -34,7 +37,7 @@ def run_experiment(seed, config):
     exp_dir, best_model_path, final_model_path, metrics_path = setup_experiment()
     print(f"📁 Experiment directory: {exp_dir}")
 
-    # --- Daten laden ---
+    # --- Daten ---
     train_dataset = get_train_dataset("data/train")
     val_dataset   = get_eval_dataset("data/val")
     test_dataset  = get_eval_dataset("data/test")
@@ -42,12 +45,12 @@ def run_experiment(seed, config):
     # --- Weighted sampler für Trainingsdaten ---
     train_sampler, class_counts = build_weighted_sampler(train_dataset, alpha=alpha)
 
-    # --- DataLoader ---
+    # --- Loader ---
     train_loader = get_loader(train_dataset, batch_size=32, sampler=train_sampler, seed=seed)
     val_loader = get_loader(val_dataset, batch_size=32, seed=seed)
     test_loader = get_loader(test_dataset, batch_size=32, seed=seed)
 
-    # --- Model ---
+    # --- Modell ---
     model_name = "cross_entropy"  # hier Modellname austauschen für anderes Modell aus registry, zB "cross_entropy" oder "cross_entropy_simple"
     model_type = get_model_type(model_name)
 
@@ -55,7 +58,6 @@ def run_experiment(seed, config):
         negatives = class_counts[0]
         positives = class_counts[1]
         pos_weight = negatives / positives
-
         model = build_model(model_name, num_classes=len(train_dataset.classes), pos_weight=pos_weight)
 
     elif model_type == "multiclass":
@@ -68,7 +70,8 @@ def run_experiment(seed, config):
         optimizer = torch.optim.SGD(
             model.parameters(),
             lr=lr,
-            momentum=momentum
+            momentum=momentum, 
+            #weight_decay=5e-4 #L2 Regularisierung
         )
     else:
         optimizer = torch.optim.Adam(
@@ -79,12 +82,12 @@ def run_experiment(seed, config):
     num_epochs = 15
 
     # --- Scheduluer ---
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer,
-    #     mode="min",
-    #     factor=0.5,
-    #     patience=2
-    # )
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="max",
+        factor=0.5,
+        patience=3
+    )
 
     # --- Config speichern ---
     with open(exp_dir / "config.txt", "w") as f:
@@ -96,9 +99,10 @@ def run_experiment(seed, config):
         f.write(f"class_counts={dict(class_counts)}\n")
         f.write(f"sampler_alpha={alpha}\n")
         f.write(f"seed={seed}\n")
+       # f.write(f"y_aug_params={y_aug_params}\n")
         
     # --- Training ---    
-    early_stopping = EarlyStopping(patience=2, min_delta=0.001, mode="max")
+    early_stopping = EarlyStopping(patience=3, min_delta=0.001, mode="max")
 
     for epoch in range(num_epochs):
         train_loss, train_acc, train_recall, train_precision, train_f1 = run_epoch(
@@ -108,7 +112,7 @@ def run_experiment(seed, config):
             model, val_loader, device
         )
 
-        #scheduler.step(val_loss)
+        scheduler.step(val_f1)
 
         improved = early_stopping(val_f1)
         if improved:
@@ -186,22 +190,10 @@ def run_experiment(seed, config):
     }
 
 
-# def run_multiple_seeds(lr, seeds=[10, 20, 30, 40, 50]):
-#     results = []
-
-#     for seed in seeds:
-#         print(f"\n--- Running seed {seed} (lr={lr}) ---")
-#         res = run_experiment(seed, lr)
-#         results.append(res)
-#         print(f"Seed {seed} → Test F1: {res['test_f1']:.4f}")
-
-#     return results
-
-
 def objective(trial):
     optimizer_name = "sgd" # trial.suggest_categorical("optimizer", ["adam", "sgd"])
-    lr = trial.suggest_float("lr", 0.03, 0.08, log=True)
-    alpha = trial.suggest_float("alpha", 0.55, 0.70)
+    lr = trial.suggest_float("lr", 0.03, 0.06, log=True)
+    alpha = trial.suggest_float("alpha", 0.50, 0.65)
     min_recall = trial.suggest_float("min_recall", 0.33, 0.45)
 
     config = {
@@ -209,14 +201,45 @@ def objective(trial):
         "lr": lr,
         "alpha": alpha,
         "min_recall": min_recall,
+        "momentum": trial.suggest_float("momentum", 0.82, 0.88)
     }
 
-    if optimizer_name == "sgd":
-        config["momentum"] = trial.suggest_float("momentum", 0.82, 0.88)
+    seeds = [10, 20, 30]
+    vals_f1 =[]
 
-    result = run_experiment(seed=42, config=config)
+    for seed in seeds:
+        result = run_experiment(seed=seed, config=config)
+        vals_f1.append(result["val_f1"])
 
-    return result["val_f1"]
+    # return float(np.mean(vals_f1)) 
+    return float(np.mean(vals_f1) - np.std(vals_f1)) # Instabilität bestrafen
+
+
+def objective(trial):
+    # --- nur y-Augmentation tunen ---
+    y_aug_params = {
+        "hflip_p": trial.suggest_float("y_hflip_p", 0.3, 0.6),
+        "vflip_p": trial.suggest_float("y_vflip_p", 0.0, 0.3),
+        "brightness": trial.suggest_float("y_brightness", 0.1, 0.5),
+        "contrast": trial.suggest_float("y_contrast", 0.2, 0.7),
+        "saturation": trial.suggest_float("y_saturation", 0.2, 0.7),
+        "perspective_p": trial.suggest_float("y_perspective_p", 0.0, 0.3),
+        "rotation_deg": trial.suggest_int("y_rotation_deg", 5, 25),
+    }
+
+    config = {
+        "y_aug_params": y_aug_params
+    }
+
+    seeds = [10, 20, 30]
+    vals_f1 = []
+
+    for seed in seeds:
+        result = run_experiment(seed=seed, config=config)
+        vals_f1.append(result["val_f1"])
+
+    # Mittelwert minus Std, um Instabilität zu bestrafen
+    return float(np.mean(vals_f1) - np.std(vals_f1))
 
 
 def evaluate_best_trial(study, seeds=[10, 20, 30, 40, 50]):
@@ -225,18 +248,67 @@ def evaluate_best_trial(study, seeds=[10, 20, 30, 40, 50]):
     print("\n🚀 Evaluating best trial with multiple seeds")
     print("Best params:", best_params)
 
+    y_aug_params = {
+        "hflip_p": best_params["y_hflip_p"],
+        "vflip_p": best_params["y_vflip_p"],
+        "brightness": best_params["y_brightness"],
+        "contrast": best_params["y_contrast"],
+        "saturation": best_params["y_saturation"],
+        "perspective_p": best_params["y_perspective_p"],
+        "rotation_deg": best_params["y_rotation_deg"],
+    }
+    config = {"y_aug_params": y_aug_params}
     results = []
 
+    for seed in seeds:
+        print(f"\n--- Seed {seed} ---")
+
+        res = run_experiment(seed=seed, config=config)
+        results.append(res)
+
+        print(
+            f"Seed {seed} → "
+            f"Test F1: {res['test_f1']:.4f} | "
+            f"Recall: {res['test_recall']:.4f} | "
+            f"Precision: {res['test_precision']:.4f}"
+        )
+
+    # --- Aggregation ---
+    avg_f1 = np.mean([r["test_f1"] for r in results])
+    std_f1 = np.std([r["test_f1"] for r in results])
+    avg_recall = np.mean([r["test_recall"] for r in results])
+    avg_precision = np.mean([r["test_precision"] for r in results])
+
+    print("\n📊 Summary over seeds:")
+    print(f"Avg Test F1: {avg_f1:.4f} ± {std_f1:.4f}")
+    print(f"Avg Recall:  {avg_recall:.4f}")
+    print(f"Avg Precision: {avg_precision:.4f}")
+    print(f"Min Test F1: {np.min([r['test_f1'] for r in results]):.4f}")
+    print(f"Max Test F1: {np.max([r['test_f1'] for r in results]):.4f}")
+
+    return results
+
+def main():
+    #study = optuna.create_study(direction="maximize")
+    #study.optimize(objective, n_trials=15)
+
+    #print("Best trial:")
+    #print(study.best_trial.params)
+    #print(study.best_trial.value)
+
+    #evaluate_best_trial(study=study, seeds=[40, 50, 60, 70, 80])
+    results = []
+    seeds=[10, 20, 30, 40, 50]
     for seed in seeds:
         print(f"\n--- Seed {seed} ---")
 
         # Config bauen
         config = {
             "optimizer": "sgd",
-            "lr": best_params["lr"],
-            "alpha": best_params["alpha"],
-            "min_recall": best_params["min_recall"],
-            "momentum": best_params["momentum"],
+            "lr": 0.061,
+            "alpha": 0.60,
+            "min_recall": 0.39,
+            "momentum": 0.87,
         }
 
         res = run_experiment(seed=seed, config=config)
@@ -260,19 +332,8 @@ def evaluate_best_trial(study, seeds=[10, 20, 30, 40, 50]):
     print(f"Avg Test F1: {avg_f1:.4f} ± {std_f1:.4f}")
     print(f"Avg Recall:  {avg_recall:.4f}")
     print(f"Avg Precision: {avg_precision:.4f}")
-
-    return results
-
-def main():
-    study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=5)
-
-    print("Best trial:")
-    print(study.best_trial.params)
-    print(study.best_trial.value)
-
-    evaluate_best_trial(study=study)
-
+    print(f"Min Test F1: {np.min([r['test_f1'] for r in results]):.4f}")
+    print(f"Max Test F1: {np.max([r['test_f1'] for r in results]):.4f}")
 
 if __name__ == "__main__":
     main()

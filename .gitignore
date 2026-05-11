@@ -7,3 +7,6 @@
 
 # Betriebssystem-Dateien
 .DS_Store
+
+# Log files
+/logs/

@@ -349,13 +349,3 @@ def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
-
-
-def summarize_results(results):
-    f1s = [r["test_f1"] for r in results]
-
-    print("\n=== SUMMARY ===")
-    print(f"Mean F1: {np.mean(f1s):.4f}")
-    print(f"Std  F1: {np.std(f1s):.4f}")
-    print(f"Min  F1: {np.min(f1s):.4f}")
-    print(f"Max  F1: {np.max(f1s):.4f}")

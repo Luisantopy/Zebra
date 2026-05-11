@@ -66,10 +66,11 @@ class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
         super().__init__()
         self._init_backbone()
 
-        # Output Layer
+        # - Output Layer -
         self.head = nn.Sequential(
             nn.Linear(128, 64),
             nn.ReLU(),
+            nn.Dropout(0.2),
             nn.Linear(64, num_classes),
         )
 
@@ -82,7 +83,7 @@ class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
         x = self.head(x)
         return x
     
-    # Loss Function definieren
+    # - Loss Function definieren -
     def compute_loss(self, outputs, labels):
         weight = self.class_weights
         if weight is not None:
@@ -93,34 +94,34 @@ class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
         return outputs.argmax(dim=1)
 
 
-# class CNNBinary(BaseClassifier, _CNNBackboneMixin):
-#     """
-#     Binary Classification mit BCEWithLogitsLoss.
-#     Output: [batch_size, 1]
-#     """
+class CNNBinary(BaseClassifier, _CNNBackboneMixin):
+    """
+    Binary Classification mit BCEWithLogitsLoss.
+    Output: [batch_size, 1]
+    """
 
-#     def __init__(self, pos_weight=None):
-#         super().__init__()
-#         self._init_backbone()
+    def __init__(self, pos_weight=None):
+        super().__init__()
+        self._init_backbone()
 
-#         self.head = nn.Linear(128, 1)
+        self.head = nn.Linear(128, 1)
 
-#         if pos_weight is not None:
-#             pos_weight = torch.as_tensor([pos_weight], dtype=torch.float32)
-#         self.pos_weight = pos_weight
+        if pos_weight is not None:
+            pos_weight = torch.as_tensor([pos_weight], dtype=torch.float32)
+        self.pos_weight = pos_weight
 
-#     def forward(self, x):
-#         x = self.forward_features(x)
-#         x = self.head(x)
-#         return x
+    def forward(self, x):
+        x = self.forward_features(x)
+        x = self.head(x)
+        return x
 
-#     def compute_loss(self, outputs, labels):
-#         labels = labels.float().unsqueeze(1)
-#         pos_weight = self.pos_weight
-#         if pos_weight is not None:
-#             pos_weight = pos_weight.to(outputs.device)
-#         return F.binary_cross_entropy_with_logits(outputs, labels, pos_weight=pos_weight)
+    def compute_loss(self, outputs, labels):
+        labels = labels.float().unsqueeze(1)
+        pos_weight = self.pos_weight
+        if pos_weight is not None:
+            pos_weight = pos_weight.to(outputs.device)
+        return F.binary_cross_entropy_with_logits(outputs, labels, pos_weight=pos_weight)
 
-#     def predict(self, outputs):
-#         probs = torch.sigmoid(outputs)
-#         return (probs >= 0.5).long().squeeze(1)
+    def predict(self, outputs):
+        probs = torch.sigmoid(outputs)
+        return (probs >= 0.5).long().squeeze(1)
