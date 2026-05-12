@@ -4,7 +4,6 @@ Binary image classification of crosswalks
 
 ### Folgende Ordnerstruktur wird vom Modell erwartet: 
     data/
-        aug/
         raw_data/
             y/
             n/
@@ -14,7 +13,7 @@ Binary image classification of crosswalks
     trained_models/
 
 ### Daten vorbereiten: 
-- Rohdaten müssen im Ordner raw_data liegen
+- Rohdaten müssen im Ordner raw_data liegen, in Ordner y/ und n/ aufgeteilt 
 - 1x data_split.py laufen lassen, um die Bilder aus raw_data in train, val und test aufzuteilen
 
 ### Modell trainieren: 
@@ -77,7 +76,7 @@ uv run python predict_single.py data/test/y/2758700_1191950.png --weights traine
 4. Threshold Tuning auf Validation Data (min_recall): 
     Ziel: Optimieren der Entscheidungsgrenze
     ––> sinnvoller Hebel, wenn Modell gut genug 
-    
+
 ### Bemerkungen: 
 - wegen stark unbalancierter Klassen wurde WeightedRandomSampling verwendet; eine zusätzliche Gewichtung der Loss Funktion hat sich als kontraproduktiv erwiesen
 - mit CrossEntropy Loss keine zusätzliche 'activation function' im Modell selber integriert

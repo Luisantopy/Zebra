@@ -2,26 +2,29 @@ import torch
 import optuna
 import numpy as np
 
-from data_augmentation import get_train_dataset, get_eval_dataset, get_loader
-from model_registry import build_model, get_model_type
+from .data_augmentation import get_train_dataset, get_eval_dataset, get_loader
+from .model_registry import build_model, get_model_type
 from helpers import (
-    EarlyStopping, 
+    EarlyStopping,
+    collect_labels_and_probs, 
     run_epoch, setup_experiment, build_weighted_sampler, 
     evaluate_with_threshold, evaluate_thresholds, select_best_threshold,
-    set_seed
+    set_seed, plot_precision_recall_curve, plot_probability_histogram
+)
+from sklearn.metrics import (
+    confusion_matrix,
 )
 
-
-def run_experiment(seed, config):
+def run_experiment(seed, config, create_plots=True):
     set_seed(seed=seed)
 
     # --- Optimierungsparameter ---
     lr = config["lr"]
     alpha = config["alpha"]
-    optimizer_name = "sgd"
+    optimizer_name = config.get("optimizer", "sgd")
     min_recall = config["min_recall"]
     momentum = config["momentum"]
-    #y_aug_params = config["y_aug_params"]
+    y_aug_params = config.get("y_aug_params", None)
 
     # --- Device definieren ---
     if torch.cuda.is_available():
@@ -38,12 +41,12 @@ def run_experiment(seed, config):
     print(f"📁 Experiment directory: {exp_dir}")
 
     # --- Daten ---
-    train_dataset = get_train_dataset("data/train")
+    train_dataset = get_train_dataset("data/train", y_aug_params=y_aug_params)
     val_dataset   = get_eval_dataset("data/val")
     test_dataset  = get_eval_dataset("data/test")
 
     # --- Weighted sampler für Trainingsdaten ---
-    train_sampler, class_counts = build_weighted_sampler(train_dataset, alpha=alpha)
+    train_sampler, class_counts = build_weighted_sampler(train_dataset, seed=seed, alpha=alpha)
 
     # --- Loader ---
     train_loader = get_loader(train_dataset, batch_size=32, sampler=train_sampler, seed=seed)
@@ -99,10 +102,10 @@ def run_experiment(seed, config):
         f.write(f"class_counts={dict(class_counts)}\n")
         f.write(f"sampler_alpha={alpha}\n")
         f.write(f"seed={seed}\n")
-       # f.write(f"y_aug_params={y_aug_params}\n")
+        f.write(f"y_aug_params={y_aug_params}\n")
         
     # --- Training ---    
-    early_stopping = EarlyStopping(patience=3, min_delta=0.001, mode="max")
+    early_stopping = EarlyStopping(patience=13, min_delta=0.001, mode="max")
 
     for epoch in range(num_epochs):
         train_loss, train_acc, train_recall, train_precision, train_f1 = run_epoch(
@@ -112,7 +115,7 @@ def run_experiment(seed, config):
             model, val_loader, device
         )
 
-        scheduler.step(val_f1)
+        # scheduler.step(val_f1)
 
         improved = early_stopping(val_f1)
         if improved:
@@ -139,19 +142,52 @@ def run_experiment(seed, config):
     model.load_state_dict(torch.load(best_model_path, map_location=device))
     print("✅ Best model loaded for test evaluation")
 
-    # --- Threshold Tuning ---
+    # --- Evaluation ---
     threshold_results = evaluate_thresholds(model, val_loader, device)
+
     best = select_best_threshold(
         threshold_results,
-        min_recall=min_recall,      
-        metric="f1"   
+        min_recall=min_recall,
+        metric="f1",
     )
+
     test_acc, test_recall, test_precision, test_f1 = evaluate_with_threshold(
         model,
         test_loader,
         device,
-        threshold=best["threshold"]
+        threshold=best["threshold"],
     )
+
+    val_labels, val_probs = collect_labels_and_probs(
+        model,
+        val_loader,
+        device,
+    )
+
+    if create_plots:
+        plot_probability_histogram(
+            labels=val_labels,
+            probs=val_probs,
+            output_path=exp_dir / "validation_probability_histogram.png",
+        )
+
+        plot_precision_recall_curve(
+            labels=val_labels,
+            probs=val_probs,
+            output_path=exp_dir / "validation_precision_recall_curve.png",
+        )
+
+    test_labels, test_probs = collect_labels_and_probs(
+        model,
+        test_loader,
+        device,
+    )
+
+    test_preds = (test_probs >= best["threshold"]).astype(int)
+    cm = confusion_matrix(test_labels, test_preds)
+
+    print("\nConfusion matrix:")
+    print(cm)
 
     with open(metrics_path, "a") as f:
         f.write("\nThreshold tuning on validation set:\n")
@@ -190,29 +226,29 @@ def run_experiment(seed, config):
     }
 
 
-def objective(trial):
-    optimizer_name = "sgd" # trial.suggest_categorical("optimizer", ["adam", "sgd"])
-    lr = trial.suggest_float("lr", 0.03, 0.06, log=True)
-    alpha = trial.suggest_float("alpha", 0.50, 0.65)
-    min_recall = trial.suggest_float("min_recall", 0.33, 0.45)
+# def objective(trial):
+#     optimizer_name = "sgd" # trial.suggest_categorical("optimizer", ["adam", "sgd"])
+#     lr = trial.suggest_float("lr", 0.03, 0.06, log=True)
+#     alpha = trial.suggest_float("alpha", 0.50, 0.65)
+#     min_recall = trial.suggest_float("min_recall", 0.33, 0.45)
 
-    config = {
-        "optimizer": optimizer_name,
-        "lr": lr,
-        "alpha": alpha,
-        "min_recall": min_recall,
-        "momentum": trial.suggest_float("momentum", 0.82, 0.88)
-    }
+#     config = {
+#         "optimizer": optimizer_name,
+#         "lr": lr,
+#         "alpha": alpha,
+#         "min_recall": min_recall,
+#         "momentum": trial.suggest_float("momentum", 0.82, 0.88)
+#     }
 
-    seeds = [10, 20, 30]
-    vals_f1 =[]
+#     seeds = [10, 20, 30]
+#     vals_f1 =[]
 
-    for seed in seeds:
-        result = run_experiment(seed=seed, config=config)
-        vals_f1.append(result["val_f1"])
+#     for seed in seeds:
+#         result = run_experiment(seed=seed, config=config)
+#         vals_f1.append(result["val_f1"])
 
-    # return float(np.mean(vals_f1)) 
-    return float(np.mean(vals_f1) - np.std(vals_f1)) # Instabilität bestrafen
+#     return float(np.mean(vals_f1)) 
+    #return float(np.mean(vals_f1) - np.std(vals_f1)) # Instabilität bestrafen
 
 
 def objective(trial):
@@ -223,23 +259,27 @@ def objective(trial):
         "brightness": trial.suggest_float("y_brightness", 0.1, 0.5),
         "contrast": trial.suggest_float("y_contrast", 0.2, 0.7),
         "saturation": trial.suggest_float("y_saturation", 0.2, 0.7),
-        "perspective_p": trial.suggest_float("y_perspective_p", 0.0, 0.3),
+        "perspective": trial.suggest_float("y_perspective", 0.0, 0.3),
         "rotation_deg": trial.suggest_int("y_rotation_deg", 5, 25),
     }
 
     config = {
-        "y_aug_params": y_aug_params
+        "optimizer": "sgd",
+        "lr": 0.061,
+        "alpha": 0.60,
+        "min_recall": 0.39,
+        "momentum": 0.87,
+        "y_aug_params": y_aug_params,
     }
 
-    seeds = [10, 20, 30]
+    seeds = [30]
     vals_f1 = []
 
     for seed in seeds:
-        result = run_experiment(seed=seed, config=config)
+        result = run_experiment(seed=seed, config=config, create_plots=False)
         vals_f1.append(result["val_f1"])
 
-    # Mittelwert minus Std, um Instabilität zu bestrafen
-    return float(np.mean(vals_f1) - np.std(vals_f1))
+    return float(np.mean(vals_f1))
 
 
 def evaluate_best_trial(study, seeds=[10, 20, 30, 40, 50]):
@@ -257,13 +297,20 @@ def evaluate_best_trial(study, seeds=[10, 20, 30, 40, 50]):
         "perspective_p": best_params["y_perspective_p"],
         "rotation_deg": best_params["y_rotation_deg"],
     }
-    config = {"y_aug_params": y_aug_params}
+    config = {
+        "optimizer": "sgd",
+        "lr": 0.061,
+        "alpha": 0.60,
+        "min_recall": 0.39,
+        "momentum": 0.87,
+        "y_aug_params": y_aug_params,
+    }
     results = []
 
     for seed in seeds:
         print(f"\n--- Seed {seed} ---")
 
-        res = run_experiment(seed=seed, config=config)
+        res = run_experiment(seed=seed, config=config, create_plots=False)
         results.append(res)
 
         print(
@@ -274,44 +321,49 @@ def evaluate_best_trial(study, seeds=[10, 20, 30, 40, 50]):
         )
 
     # --- Aggregation ---
-    avg_f1 = np.mean([r["test_f1"] for r in results])
-    std_f1 = np.std([r["test_f1"] for r in results])
-    avg_recall = np.mean([r["test_recall"] for r in results])
-    avg_precision = np.mean([r["test_precision"] for r in results])
+    if len(seeds) > 1:
+        avg_f1 = np.mean([r["test_f1"] for r in results])
+        std_f1 = np.std([r["test_f1"] for r in results])
+        avg_recall = np.mean([r["test_recall"] for r in results])
+        avg_precision = np.mean([r["test_precision"] for r in results])
 
-    print("\n📊 Summary over seeds:")
-    print(f"Avg Test F1: {avg_f1:.4f} ± {std_f1:.4f}")
-    print(f"Avg Recall:  {avg_recall:.4f}")
-    print(f"Avg Precision: {avg_precision:.4f}")
-    print(f"Min Test F1: {np.min([r['test_f1'] for r in results]):.4f}")
-    print(f"Max Test F1: {np.max([r['test_f1'] for r in results]):.4f}")
+        print("\n📊 Summary over seeds:")
+        print(f"Avg Test F1: {avg_f1:.4f} ± {std_f1:.4f}")
+        print(f"Avg Recall:  {avg_recall:.4f}")
+        print(f"Avg Precision: {avg_precision:.4f}")
+        print(f"Min Test F1: {np.min([r['test_f1'] for r in results]):.4f}")
+        print(f"Max Test F1: {np.max([r['test_f1'] for r in results]):.4f}")
 
     return results
 
 def main():
-    #study = optuna.create_study(direction="maximize")
-    #study.optimize(objective, n_trials=15)
+    # study = optuna.create_study(direction="maximize")
+    # study.optimize(objective, n_trials=15)
 
-    #print("Best trial:")
-    #print(study.best_trial.params)
-    #print(study.best_trial.value)
+    # print("Best trial:")
+    # print(study.best_trial.params)
+    # print(study.best_trial.value)
 
-    #evaluate_best_trial(study=study, seeds=[40, 50, 60, 70, 80])
+    # evaluate_best_trial(study=study, seeds=[30])
+
+
     results = []
-    seeds=[10, 20, 30, 40, 50]
-    for seed in seeds:
-        print(f"\n--- Seed {seed} ---")
+    #seeds=[30]
+    seed = 30
+    lr = [0.03, 0.04, 0.05, 0.065]
+    for l in lr:
+        print(f"\n--- Seed {seed} --- | lr={l} ---")
 
         # Config bauen
         config = {
             "optimizer": "sgd",
-            "lr": 0.061,
+            "lr": l,
             "alpha": 0.60,
             "min_recall": 0.39,
             "momentum": 0.87,
         }
 
-        res = run_experiment(seed=seed, config=config)
+        res = run_experiment(seed=seed, config=config, create_plots=False)
         results.append(res)
 
         print(
@@ -321,19 +373,30 @@ def main():
             f"Precision: {res['test_precision']:.4f}"
         )
 
+    print("\n📊 LR Sweep:")
+    for r in results:
+        print(
+            f"lr={r['lr']:.4f} | "
+            f"val_f1={r['val_f1']:.4f} | "
+            f"test_f1={r['test_f1']:.4f} | "
+            f"recall={r['test_recall']:.4f} | "
+            f"precision={r['test_precision']:.4f}"
+        )
+
     # --- Aggregation ---
-    avg_f1 = np.mean([r["test_f1"] for r in results])
-    std_f1 = np.std([r["test_f1"] for r in results])
+    # if len(seeds) > 1:
+    #     avg_f1 = np.mean([r["test_f1"] for r in results])
+    #     std_f1 = np.std([r["test_f1"] for r in results])
 
-    avg_recall = np.mean([r["test_recall"] for r in results])
-    avg_precision = np.mean([r["test_precision"] for r in results])
+    #     avg_recall = np.mean([r["test_recall"] for r in results])
+    #     avg_precision = np.mean([r["test_precision"] for r in results])
 
-    print("\n📊 Summary over seeds:")
-    print(f"Avg Test F1: {avg_f1:.4f} ± {std_f1:.4f}")
-    print(f"Avg Recall:  {avg_recall:.4f}")
-    print(f"Avg Precision: {avg_precision:.4f}")
-    print(f"Min Test F1: {np.min([r['test_f1'] for r in results]):.4f}")
-    print(f"Max Test F1: {np.max([r['test_f1'] for r in results]):.4f}")
+    #     print("\n📊 Summary over seeds:")
+    #     print(f"Avg Test F1: {avg_f1:.4f} ± {std_f1:.4f}")
+    #     print(f"Avg Recall:  {avg_recall:.4f}")
+    #     print(f"Avg Precision: {avg_precision:.4f}")
+    #     print(f"Min Test F1: {np.min([r['test_f1'] for r in results]):.4f}")
+    #     print(f"Max Test F1: {np.max([r['test_f1'] for r in results]):.4f}")
 
 if __name__ == "__main__":
     main()

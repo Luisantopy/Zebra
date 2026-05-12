@@ -1,5 +1,5 @@
-from torch_cnn_simple import SimpleCNNCrossEntropy, SimpleCNNBinary
-from torch_cnn import CNNCrossEntropy
+from .torch_cnn_simple import SimpleCNNCrossEntropy, SimpleCNNBinary
+from .torch_cnn import CNNCrossEntropy
 
 
 MODEL_REGISTRY = {

@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 import random
 import numpy as np
-
+from sklearn.metrics import (precision_recall_curve)
 
 # --- image plot helper from https://github.com/pytorch/vision/blob/main/gallery/transforms/helpers.py
 def plot(imgs, row_title=None, bbox_width=3, **imshow_kwargs):
@@ -66,6 +66,54 @@ def plot(imgs, row_title=None, bbox_width=3, **imshow_kwargs):
             axs[row_idx, 0].set(ylabel=row_title[row_idx])
 
     plt.tight_layout()
+
+
+def plot_probability_histogram(labels, probs, output_path):
+    labels = np.asarray(labels).ravel()
+    probs = np.asarray(probs).ravel()
+
+    plt.figure(figsize=(8, 5))
+
+    plt.hist(
+        probs[labels == 0],
+        bins=50,
+        alpha=0.5,
+        label="negative",
+    )
+
+    plt.hist(
+        probs[labels == 1],
+        bins=50,
+        alpha=0.5,
+        label="positive",
+    )
+
+    plt.xlabel("Predicted probability for class 1")
+    plt.ylabel("Count")
+    plt.title("Validation probability distributions")
+    plt.legend()
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=150)
+    plt.show()
+
+
+def plot_precision_recall_curve(labels, probs, output_path):
+    labels = np.asarray(labels).ravel()
+    probs = np.asarray(probs).ravel()
+
+    precision, recall, _ = precision_recall_curve(labels, probs)
+
+    plt.figure(figsize=(6, 6))
+    plt.plot(recall, precision)
+
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.title("Precision-Recall Curve")
+    plt.tight_layout()
+
+    plt.savefig(output_path, dpi=150)
+    plt.show()
 
 
 # === Helper für Training Pipeline ===
@@ -154,7 +202,7 @@ def setup_experiment():
 
 
 # --- Weighted Random Sampling ---
-def build_weighted_sampler(dataset, alpha=0.25):
+def build_weighted_sampler(dataset, seed, alpha=0.25):
     class_counts = Counter(dataset.targets)
 
     sample_weights = [
@@ -162,11 +210,12 @@ def build_weighted_sampler(dataset, alpha=0.25):
         for label in dataset.targets
     ]
     sample_weights = torch.DoubleTensor(sample_weights)
-
+    
     sampler = WeightedRandomSampler(
         weights=sample_weights,
         num_samples=len(sample_weights),
-        replacement=True
+        replacement=True,
+        generator=torch.Generator().manual_seed(seed)
     )
 
     return sampler, class_counts
@@ -337,6 +386,7 @@ def select_best_threshold(
 
 # --- Seeds ---
 def set_seed(seed: int = 42):
+    torch.use_deterministic_algorithms(True)
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -349,3 +399,28 @@ def seed_worker(worker_id):
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
+
+# --- Evaluation helpers ---
+@torch.no_grad()
+def collect_labels_and_probs(model, loader, device, positive_label=1):
+    model.eval()
+
+    all_labels = []
+    all_probs = []
+
+    for images, labels in loader:
+        images = images.to(device)
+        labels = labels.to(device)
+
+        outputs = model(images)
+
+        # CrossEntropy-Modell: outputs = [batch_size, 2]
+        probs = torch.softmax(outputs, dim=1)[:, positive_label]
+
+        all_labels.append(labels.detach().cpu().numpy())
+        all_probs.append(probs.detach().cpu().numpy())
+
+    labels = np.concatenate(all_labels).ravel()
+    probs = np.concatenate(all_probs).ravel()
+
+    return labels, probs

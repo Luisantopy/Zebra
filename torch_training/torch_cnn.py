@@ -70,7 +70,7 @@ class CNNCrossEntropy(BaseClassifier, _CNNBackboneMixin):
         self.head = nn.Sequential(
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            # nn.Dropout(0.2),
             nn.Linear(64, num_classes),
         )
 
