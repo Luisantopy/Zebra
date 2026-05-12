@@ -350,14 +350,14 @@ def main():
     results = []
     #seeds=[30]
     seed = 30
-    lr = [0.03, 0.04, 0.05, 0.065]
-    for l in lr:
-        print(f"\n--- Seed {seed} --- | lr={l} ---")
+    lrs = [0.045, 0.048, 0.050, 0.052, 0.54]
+    for lr in lrs:
+        print(f"\n--- Seed {seed} --- | lr={lr} ---")
 
         # Config bauen
         config = {
             "optimizer": "sgd",
-            "lr": l,
+            "lr": lr,
             "alpha": 0.60,
             "min_recall": 0.39,
             "momentum": 0.87,
