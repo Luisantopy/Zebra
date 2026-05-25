@@ -1,16 +1,19 @@
 import matplotlib.pyplot as plt
+from pathlib import Path
 import torch
 from torchvision.utils import draw_bounding_boxes, draw_keypoints, draw_segmentation_masks
 from torch.utils.data import WeightedRandomSampler
 from torchvision import tv_tensors
 from torchvision.transforms import v2
 from torchvision.transforms.v2 import functional as F
+from torchvision.transforms.functional import to_pil_image
+
 from collections import Counter
 from pathlib import Path
 from datetime import datetime
 import random
 import numpy as np
-from sklearn.metrics import (precision_recall_curve)
+from sklearn.metrics import precision_recall_curve
 
 # --- image plot helper from https://github.com/pytorch/vision/blob/main/gallery/transforms/helpers.py
 def plot(imgs, row_title=None, bbox_width=3, **imshow_kwargs):
@@ -116,6 +119,133 @@ def plot_precision_recall_curve(labels, probs, output_path):
     plt.show()
 
 
+def plot_false_negatives(
+    model,
+    dataset,
+    loader,
+    device,
+    threshold,
+    output_dir,
+    save_path,
+    max_images=25,
+    save_hard_positives=False,
+):
+    model.eval()
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    false_negatives = []
+
+    sample_idx = 0
+
+    with torch.no_grad():
+        for images, labels in loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs = model(images)
+            
+
+            # multiclass cross_entropy
+            probs = torch.softmax(outputs, dim=1)[:, 1]
+            preds = (probs >= threshold).long()
+
+            for i in range(len(images)):
+                label = labels[i].item()
+                pred = preds[i].item()
+
+                # False Negative
+                if label == 1 and pred == 0:
+                    
+                    false_negatives.append(
+                        {
+                            "image": images[i].cpu(),
+                            "prob": probs[i].item(),
+                            "idx": sample_idx,
+                            "path": dataset.samples[sample_idx][0],
+                        }
+                    )
+
+                sample_idx += 1
+
+    # -------------------------------------------------
+    # Hard positives speichern
+    # -------------------------------------------------
+    if save_hard_positives:
+        hard_positive_path = output_dir / "hard_positives.txt"
+
+        with open(hard_positive_path, "w") as f:
+            for item in false_negatives:
+
+                # nur wirklich harte FN speichern
+                if item["prob"] < 0.05:
+                    f.write(item["path"] + "\n")
+
+        print(f"Saved hard positives to: {hard_positive_path}")
+    
+    print(f"Found {len(false_negatives)} false negatives")
+
+    # -------------------------------------------------
+    # Plotten
+    # -------------------------------------------------
+
+    num_images = min(max_images, len(false_negatives))
+
+    cols = 5
+    rows = (num_images + cols - 1) // cols
+
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 3 * rows))
+
+    if rows == 1:
+        axes = [axes]
+
+    axes = np.array(axes).reshape(rows, cols)
+
+    for ax in axes.flatten():
+        ax.axis("off")
+
+    # -------------------------------------------------
+    # Bilder plotten
+    # -------------------------------------------------
+
+    for idx in range(num_images):
+        item = false_negatives[idx]
+
+        image = item["image"]
+        prob = item["prob"]
+
+        # Denormalisieren
+        mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+
+        image = image * std + mean
+        image = torch.clamp(image, 0, 1)
+
+        image = to_pil_image(image)
+
+        ax = axes[idx // cols, idx % cols]
+
+        ax.imshow(image)
+        ax.set_title(f"p(y)={prob:.3f}")
+        ax.axis("off")
+
+    # -------------------------------------------------
+    # Speichern + Anzeigen
+    # -------------------------------------------------
+
+    plt.tight_layout()
+
+    plt.savefig(save_path, dpi=200)
+
+    plt.show()
+
+    plt.close()
+
+    print(f"Saved to: {save_path}")
+    
+
+
 # === Helper für Training Pipeline ===
 # --- Training + Validation ---
 def run_epoch(model, loader, device, optimizer=None):
@@ -202,13 +332,88 @@ def setup_experiment():
 
 
 # --- Weighted Random Sampling ---
-def build_weighted_sampler(dataset, seed, alpha=0.25):
+def build_weighted_sampler(
+    dataset,
+    seed,
+    alpha=0.25,
+    hard_positive_paths=None,
+    hard_positive_weight=3.0,
+):    
+    """
+    Erstellt einen WeightedRandomSampler für unausgeglichene Datensätze.
+
+    Die Samplinggewichte basieren auf der Klassenhäufigkeit:
+    seltene Klassen erhalten höhere Gewichte, häufige Klassen
+    niedrigere Gewichte.
+
+    Zusätzlich können bestimmte schwierige Positivbeispiele
+    ("Hard Positives") gezielt stärker gewichtet werden,
+    um deren Samplingwahrscheinlichkeit während des Trainings
+    zu erhöhen.
+
+    Parameter
+    ----------
+    dataset :
+        Datensatz mit:
+        - dataset.targets
+        - dataset.samples
+
+    seed : int
+        Zufallsseed für reproduzierbares Sampling.
+
+    alpha : float, optional
+        Stärke der Klassengewichtung.
+
+        Gewicht = 1 / (class_count ** alpha)
+
+        alpha = 0:
+            keine Gewichtung
+
+        alpha = 1:
+            vollständige inverse Klassenhäufigkeit
+
+        Typischer Bereich:
+            0.2 - 0.6
+
+    hard_positive_paths : set[str] | None, optional
+        Menge von Bildpfaden schwieriger Positivbeispiele,
+        die stärker gewichtet werden sollen.
+
+    hard_positive_weight : float, optional
+        Multiplikativer Zusatzfaktor für Hard Positives.
+
+        Beispiel:
+            weight *= hard_positive_weight
+
+    Returns
+    -------
+    sampler : WeightedRandomSampler
+        Sampler für den DataLoader.
+
+    class_counts : Counter
+        Anzahl der Samples pro Klasse.
+    """
+    if hard_positive_paths is None:
+        hard_positive_paths = set()
+
     class_counts = Counter(dataset.targets)
 
-    sample_weights = [
-        1.0 / (class_counts[label] ** alpha)
-        for label in dataset.targets
-    ]
+    sample_weights = []
+
+    for idx, label in enumerate(dataset.targets):
+
+        # normaler Klassengewichtungs-Teil
+        weight = 1.0 / (class_counts[label] ** alpha)
+
+        # Pfad des Samples
+        path, _ = dataset.samples[idx]
+
+        # schwierige Positives stärker gewichten
+        if path in hard_positive_paths:
+            weight *= hard_positive_weight
+
+        sample_weights.append(weight)
+
     sample_weights = torch.DoubleTensor(sample_weights)
     
     sampler = WeightedRandomSampler(
@@ -256,7 +461,7 @@ class EarlyStopping:
 @torch.no_grad()
 def evaluate_thresholds(model, loader, device, thresholds=None, positive_label=1):
     if thresholds is None:
-        thresholds = [round(x, 2) for x in torch.linspace(0.1, 0.9, steps=17).tolist()]
+        thresholds = [round(x, 2) for x in torch.linspace(0.3, 0.6, steps=10).tolist()]
 
     model.eval()
     results = []
@@ -356,6 +561,7 @@ def evaluate_with_threshold(model, loader, device, threshold=0.5, positive_label
 def select_best_threshold(
     results,
     min_recall=0.2,
+    #min_precision=0.8,
     metric="precision"
 ):
     """
@@ -378,6 +584,8 @@ def select_best_threshold(
         best = max(valid, key=lambda x: x["precision"])
     elif metric == "f1":
         best = max(valid, key=lambda x: x["f1"])
+    elif metric == "recall":
+        best = max(valid, key=lambda x: x["recall"])
     else:
         raise ValueError("metric muss 'precision' oder 'f1' sein")
 

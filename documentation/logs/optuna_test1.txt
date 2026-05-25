@@ -1,0 +1,65 @@
+Best is trial 28 with value: 0.6727272727272728.
+{'optimizer': 'sgd', 'lr': 0.05373884212619643, 'alpha': 0.6038583065500889, 'min_recall': 0.38489687793287447, 'momentum': 0.8405318570808907}
+
+----
+
+🚀 Evaluating best trial with multiple seeds
+Best params: {'lr': 0.05366565808095135, 'alpha': 0.6245467217736109, 'min_recall': 0.37042984397875645, 'momentum': 0.837464468843}
+
+--- Seed 10 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_185549
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 6
+📦 Final model saved: trained_models/exp_20260405_185549/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 10 → Test F1: 0.4286 | Recall: 0.3684 | Precision: 0.5122
+
+--- Seed 20 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_190534
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_190534/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 20 → Test F1: 0.1047 | Recall: 0.5439 | Precision: 0.0579
+
+--- Seed 30 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_191124
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 5
+📦 Final model saved: trained_models/exp_20260405_191124/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 30 → Test F1: 0.5000 | Recall: 0.4386 | Precision: 0.5814
+
+--- Seed 40 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_191951
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 5
+📦 Final model saved: trained_models/exp_20260405_191951/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 40 → Test F1: 0.4800 | Recall: 0.4211 | Precision: 0.5581
+
+--- Seed 50 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_192812
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 4
+📦 Final model saved: trained_models/exp_20260405_192812/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 50 → Test F1: 0.2667 | Recall: 0.3509 | Precision: 0.2151
+
+📊 Summary over seeds:
+Avg Test F1: 0.3560 ± 0.1500
+Avg Recall:  0.4246
+Avg Precision: 0.3849

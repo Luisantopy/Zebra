@@ -1,0 +1,328 @@
+--- Running seed 1 (lr=0.05) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_083625
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 5
+📦 Final model saved: trained_models/exp_20260405_083625/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 1 → Test F1: 0.5667
+
+--- Running seed 2 (lr=0.05) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_084505
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 4
+📦 Final model saved: trained_models/exp_20260405_084505/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 2 → Test F1: 0.1156
+
+--- Running seed 3 (lr=0.05) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_085222
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 6
+📦 Final model saved: trained_models/exp_20260405_085222/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 3 → Test F1: 0.5055
+
+--- Running seed 4 (lr=0.05) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_090223
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 12
+📦 Final model saved: trained_models/exp_20260405_090223/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 4 → Test F1: 0.5625
+
+--- Running seed 5 (lr=0.05) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_092026
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_092026/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 5 → Test F1: 0.1086
+
+=== SUMMARY ===
+Mean F1: 0.3718
+Std  F1: 0.2131
+Min  F1: 0.1086
+Max  F1: 0.5667
+
+--- Running seed 1 (lr=0.075) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_092622
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 4
+📦 Final model saved: trained_models/exp_20260405_092622/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 1 → Test F1: 0.1638
+
+--- Running seed 2 (lr=0.075) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_093339
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_093339/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 2 → Test F1: 0.0997
+
+--- Running seed 3 (lr=0.075) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_093936
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_093936/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 3 → Test F1: 0.1049
+
+--- Running seed 4 (lr=0.075) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_094535
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_094535/final_model.pth
+✅ Best model loaded for test evaluation
+⚠️ Kein Threshold erfüllt min_recall → fallback auf best F1
+Seed 4 → Test F1: 0.0335
+
+--- Running seed 5 (lr=0.075) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_095130
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_095130/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 5 → Test F1: 0.0957
+
+=== SUMMARY ===
+Mean F1: 0.0995
+Std  F1: 0.0413
+Min  F1: 0.0335
+Max  F1: 0.1638
+
+--- Running seed 1 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_095726
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_095726/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 1 → Test F1: 0.0334
+
+--- Running seed 2 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_100322
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_100322/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 2 → Test F1: 0.0334
+
+--- Running seed 3 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_100916
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_100916/final_model.pth
+✅ Best model loaded for test evaluation
+⚠️ Kein Threshold erfüllt min_recall → fallback auf best F1
+Seed 3 → Test F1: 0.0000
+
+--- Running seed 4 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_101513
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_101513/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 4 → Test F1: 0.0334
+
+--- Running seed 5 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_102113
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_102113/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 5 → Test F1: 0.0334
+
+=== SUMMARY ===
+Mean F1: 0.0267
+Std  F1: 0.0133
+Min  F1: 0.0000
+Max  F1: 0.0334
+
+--- Running seed 10 (lr=0.0001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_103310
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_103310/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 10 → Test F1: 0.0334
+
+--- Running seed 20 (lr=0.0001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_103907
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_103907/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 20 → Test F1: 0.0824
+
+--- Running seed 30 (lr=0.0001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_104503
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_104503/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 30 → Test F1: 0.0944
+
+--- Running seed 40 (lr=0.0001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_105056
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_105056/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 40 → Test F1: 0.0440
+
+--- Running seed 50 (lr=0.0001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_105648
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_105648/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 50 → Test F1: 0.0391
+
+=== SUMMARY ===
+Mean F1: 0.0587
+Std  F1: 0.0248
+Min  F1: 0.0334
+Max  F1: 0.0944
+
+--- Running seed 10 (lr=0.001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_110237
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 4
+📦 Final model saved: trained_models/exp_20260405_110237/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 10 → Test F1: 0.0835
+
+--- Running seed 20 (lr=0.001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_110956
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 7
+📦 Final model saved: trained_models/exp_20260405_110956/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 20 → Test F1: 0.0999
+
+--- Running seed 30 (lr=0.001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_112121
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_112121/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 30 → Test F1: 0.1059
+
+--- Running seed 40 (lr=0.001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_112713
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_112713/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 40 → Test F1: 0.1019
+
+--- Running seed 50 (lr=0.001) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_113309
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 7
+📦 Final model saved: trained_models/exp_20260405_113309/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 50 → Test F1: 0.0474
+
+=== SUMMARY ===
+Mean F1: 0.0877
+Std  F1: 0.0216
+Min  F1: 0.0474
+Max  F1: 0.1059
+
+📁 Experiment directory: trained_models/exp_20260405_114434
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_114434/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 10 → Test F1: 0.0600
+
+--- Running seed 20 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_115038
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_115038/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 20 → Test F1: 0.0334
+
+--- Running seed 30 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_115643
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_115643/final_model.pth
+✅ Best model loaded for test evaluation
+⚠️ Kein Threshold erfüllt min_recall → fallback auf best F1
+Seed 30 → Test F1: 0.0000
+
+--- Running seed 40 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_120239
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 4
+📦 Final model saved: trained_models/exp_20260405_120239/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 40 → Test F1: 0.0334
+
+--- Running seed 50 (lr=0.1) ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260405_120955
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260405_120955/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 50 → Test F1: 0.0918
+
+=== SUMMARY ===
+Mean F1: 0.0437
+Std  F1: 0.0307
+Min  F1: 0.0000
+Max  F1: 0.0918

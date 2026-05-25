@@ -27,19 +27,19 @@ class _CNNBackboneMixin:
         self.features = nn.Sequential(
             # - Input Layer -
             nn.Conv2d(3, 32, kernel_size=3, padding=1),
-           # nn.BatchNorm2d(32),
+            # nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2),
 
             # - Hidden Layer -
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
-         #   nn.BatchNorm2d(64),
+            #   nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2),
 
             # - Hidden Layer -
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
-          #  nn.BatchNorm2d(128),
+            #  nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.MaxPool2d(2),
         )

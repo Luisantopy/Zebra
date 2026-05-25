@@ -1,5 +1,6 @@
 from .torch_cnn_simple import SimpleCNNCrossEntropy, SimpleCNNBinary
 from .torch_cnn import CNNCrossEntropy
+from .torch_resnet import ResNet18CrossEntropy, ResNet50CrossEntropy
 
 
 MODEL_REGISTRY = {
@@ -13,6 +14,14 @@ MODEL_REGISTRY = {
     },
     "cross_entropy": {
         "builder": lambda num_classes, **kwargs: CNNCrossEntropy(num_classes=num_classes, **kwargs),
+        "type": "multiclass",
+    },
+    "resnet18_cross_entropy": {
+        "builder": lambda num_classes, **kwargs: ResNet18CrossEntropy(num_classes=num_classes, **kwargs),
+        "type": "multiclass",
+    },
+    "resnet50_cross_entropy": {
+        "builder": lambda num_classes, **kwargs: ResNet50CrossEntropy(num_classes=num_classes, **kwargs),
         "type": "multiclass",
     },
 }

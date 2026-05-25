@@ -1,0 +1,62 @@
+Best trial:
+{'lr': 0.07098428172745576, 'alpha': 0.6007459278453948, 'min_recall': 0.39352376553020363, 'momentum': 0.868723582186152}
+0.753527735880677
+
+🚀 Evaluating best trial with multiple seeds
+Best params: {'lr': 0.07098428172745576, 'alpha': 0.6007459278453948, 'min_recall': 0.39352376553020363, 'momentum': 0.868723582186152}
+
+--- Seed 40 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260406_044700
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 5
+📦 Final model saved: trained_models/exp_20260406_044700/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 40 → Test F1: 0.4706 | Recall: 0.4912 | Precision: 0.4516
+
+--- Seed 50 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260406_045525
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 4
+📦 Final model saved: trained_models/exp_20260406_045525/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 50 → Test F1: 0.4655 | Recall: 0.4737 | Precision: 0.4576
+
+--- Seed 60 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260406_050234
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 4
+📦 Final model saved: trained_models/exp_20260406_050234/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 60 → Test F1: 0.4030 | Recall: 0.4737 | Precision: 0.3506
+
+--- Seed 70 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260406_050943
+✅ Best model saved
+✅ Best model saved
+⏹ Early stopping after epoch 5
+📦 Final model saved: trained_models/exp_20260406_050943/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 70 → Test F1: 0.0618 | Recall: 0.3333 | Precision: 0.0341
+
+--- Seed 80 ---
+Device: mps
+📁 Experiment directory: trained_models/exp_20260406_051810
+✅ Best model saved
+⏹ Early stopping after epoch 3
+📦 Final model saved: trained_models/exp_20260406_051810/final_model.pth
+✅ Best model loaded for test evaluation
+Seed 80 → Test F1: 0.1059 | Recall: 0.7193 | Precision: 0.0572
+
+📊 Summary over seeds:
+Avg Test F1: 0.3014 ± 0.1797
+Avg Recall:  0.4982
+Avg Precision: 0.2702
+Min Test F1: 0.0618
+Max Test F1: 0.4706
