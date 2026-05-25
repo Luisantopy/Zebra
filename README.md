@@ -315,3 +315,4 @@ Potential next steps:
 
 Created by Luisa Plasczymonka as part of a deep learning experimentation 
 project on aerial image classification and robust zebra crossing detection.
+For in-depth project discussion see `documentation/projektbericht.md`
