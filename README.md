@@ -1,82 +1,317 @@
-# Zebra
-Binary image classification of crosswalks
+# Zebra Crossing Detection from Aerial Images
 
+Deep learning project for detecting zebra crossings in aerial imagery using custom CNNs, pretrained ResNet architectures, and systematic experimentation with class imbalance handling, augmentation strategies, and transfer learning.
 
-### Folgende Ordnerstruktur wird vom Modell erwartet: 
-    data/
-        raw_data/
-            y/
-            n/
-        test/
-        train/
-        val/
-    trained_models/
+---
 
-### Daten vorbereiten: 
-- Rohdaten müssen im Ordner raw_data liegen, in Ordner y/ und n/ aufgeteilt 
-- 1x data_split.py laufen lassen, um die Bilder aus raw_data in train, val und test aufzuteilen
+## Project Overview
 
-### Modell trainieren: 
-uv run python -m training_pipeline
---> Trainierte Modelle werden inkl. config + metrics Dateien automatisch in einen eigenen Unterordner in trained_models abgelegt
+The goal of this project is to classify aerial images into:
 
+| Class | Description            |
+| ----- | ---------------------- |
+| `y`   | Zebra crossing present |
+| `n`   | No zebra crossing      |
 
-### Einzelne Vorhersage machen: 
-uv run python -m predict_single "path/zum/bild.png" --weights trained_models/"experiment_folder"/best_model.pth
-uv run python predict_single.py data/test/y/2758700_1191950.png --weights trained_models/exp_20260403_174647/best_model.pth --model binary_bce --classes n y
-uv run python predict_single.py data/test/y/2758700_1191950.png --weights trained_models/exp_20260403_143400/best_model.pth --model cross_entropy --classes n y
+The project focuses on:
 
+* binary image classification
+* aerial/satellite imagery
+* class imbalance handling
+* transfer learning
+* seed stability
+* probability calibration
+* false negative reduction
+* model interpretability
 
-### Seed setzen
-    Ziel: Training stabilisieren
+---
 
+## Repository Structure
 
-### Optimierungen mit Optuna: 
-1. Weighted Random Sampling: 
-    Ziel: Klassenungleichgweicht entgegensteuern
-    ––> Sampler zu schwach dh. *alpha* zu niedrig: hohe Accuracy aber Recall niedrig   
-    ––> Sampler zu stark dh. *alpha* zu gross: hoher Recall aber Accuracy niedrig    
-    best *alpha* = 0.90
-    Test Loss: 0.3201 | Test Acc: 0.8286 | Test Recall: 0.5614 | Test Precision: 0.0549 | Test F1: 0.1000
+```text
+torch_training/
+├── data/
+│   ├── train/
+│   ├── val/
+│   └── test/
+│
+├── trained_models/
+│   └── exp_*/
+│
+├── torch_training/
+│   ├── training_pipeline.py
+│   ├── predict_single.py
+│   ├── data_augmentation.py
+│   ├── model_registry.py
+│   ├── torch_cnn.py
+│   ├── torch_cnn_simple.py
+│   └── helpers.py
+│
+└── README.md
+```
 
-2. Optimizer + Learning Rate
-    Ziel: Optimizer Funktion für bessere Balancierung der Metriken finden
-    Optimizer Vergleich: *Adam* und *SGD* (jeweils mit Learning Rate Optimierungen)
-    *Adam*: keine Verbesserung durch Anpassen der Lernrate
-    *SGD*: deutliche Verbesserung ggüber Adam
-    Test with tuned threshold=0.45 | Acc: 0.9842 | Recall: 0.3158 | Precision: 0.5625 | F1: 0.4045
+---
 
-### Manuelle Optimierungen: 
-5. Data Augmentation:
-    Ziel: Klassenungleichgewicht entgegensteuern
-    asymmetrische Augmentationen für y/ und n/ Klassen mit dem Ziel Ungleichgewicht entgegenzusteuern und Precision zu erhöhen
-    ––> keine zu schwache Augmentation
-    ––> asymmetrische Augmentation hilft, darf aber nicht zu stark sein
-    ––> gezieltes Feintuning der Data Augmentation verbessert das Resultat deutlich
-    ––> ab hier ist Threshold Tuning sinnvoll
-    Test with tuned threshold=0.50 | Acc: 0.9774 | Recall: 0.2281 | Precision: 0.2889 | F1: 0.2549
+# Features
 
-3. Architektur:
-    ––> Output Layer:
-        Ziel: mehr Kapazität im Head
-        erweitern von Linear zu: 
-        + Linear 128
-        + ReLu
-        + Linear 64
-        Test Loss: 0.3472 | Test Acc: 0.7688 | Test Recall: 0.8246 | Test Precision: 0.0577 | Test F1: 0.1079
-    ––> Hidden Layers: 
-        Ziel: Verbesserung der Generalisierung, 
+## Models
 
-3. Loss Function: 
-    Ziel: Verlustfunktion an Problemstellung anpassen, Balance aus Precision und Accuracy verbessern
-    *cross_entropy*:    Test Loss: 0.3201 | Test Acc: 0.8286 | Test Recall: 0.5614 | Test Precision: 0.0549 | Test F1: 0.1000
-    *binary_bce*:       Test Loss: 1.1073 | Test Acc: 0.6223 | Test Recall: 0.9649 | Test Precision: 0.0416 | Test F1: 0.0798
-    ––> *cross_entropy* leicht besser, *binary_bce* wird erstmal nicht weiterverfolgt
+Implemented and tested:
 
-4. Threshold Tuning auf Validation Data (min_recall): 
-    Ziel: Optimieren der Entscheidungsgrenze
-    ––> sinnvoller Hebel, wenn Modell gut genug 
+### Custom CNNs
 
-### Bemerkungen: 
-- wegen stark unbalancierter Klassen wurde WeightedRandomSampling verwendet; eine zusätzliche Gewichtung der Loss Funktion hat sich als kontraproduktiv erwiesen
-- mit CrossEntropy Loss keine zusätzliche 'activation function' im Modell selber integriert
+* shallow CNN baselines
+* CrossEntropy variants
+* BCEWithLogits variants
+
+#### Keras / TensorFlow Models
+
+Additional experiments were conducted using TensorFlow/Keras to investigate 
+whether the strong seed dependency observed in PyTorch was framework-specific.
+
+Tested architectures included:
+
+- Sequential CNN classifiers
+- Conv2D + MaxPooling architectures
+- Dense classification heads
+- Binary sigmoid output models
+
+Main findings:
+
+- seed instability remained present
+- performance fluctuations were similar to PyTorch
+- the main issue was therefore likely dataset-related rather than framework-related
+
+The Keras experiments helped confirm that:
+
+- class imbalance
+- oversampling dynamics
+- difficult positive samples
+- stochastic optimization
+
+were the dominant challenges of the project.
+
+### Pretrained Models
+
+* ResNet18
+* ResNet50
+
+using:
+
+```python
+torchvision.models
+```
+
+---
+
+## Fine-Tuning Pipeline
+
+Supports:
+
+* frozen backbone training
+* progressive unfreezing
+* head-only training
+* transfer learning workflows
+
+Example:
+
+```python
+model.freeze_backbone()
+model.unfreeze_last_block()
+model.unfreeze_all()
+```
+
+---
+
+## Data Augmentation
+
+Implemented augmentations:
+
+* horizontal flips
+* vertical flips
+* color jitter
+* perspective distortion
+* rotation
+* normalization
+
+Class-specific augmentation is supported.
+
+---
+
+## Class Imbalance Handling
+
+Implemented techniques:
+
+* `WeightedRandomSampler`
+* configurable oversampling strength
+* hard positive mining
+* threshold tuning
+
+---
+
+## Experiment Tracking
+
+Each experiment automatically stores:
+
+* best model weights
+* final model weights
+* metrics
+* confusion matrices
+* false negative visualizations
+* hard positive samples
+
+Example:
+
+```text
+trained_models/exp_20260520_123456/
+```
+
+---
+
+# Results
+
+## Best Performing Model
+
+The best results were achieved using:
+
+* pretrained ResNet50
+* transfer learning
+* weighted sampling
+* threshold tuning
+
+Typical performance:
+
+| Metric    | Value      |
+| --------- | ---------- |
+| Precision | ~0.95–0.97 |
+| Recall    | ~0.84      |
+| F1 Score  | ~0.89–0.90 |
+
+Example confusion matrix:
+
+```text
+[[5739    9]
+ [  39  213]]
+```
+
+---
+
+# Key Learnings
+
+## Transfer Learning Matters
+
+Pretrained ResNet models significantly improved:
+
+* stability
+* calibration
+* recall
+* robustness
+
+compared to custom CNNs.
+
+---
+
+## Seed Dependency Is Real
+
+Different random seeds produced surprisingly different results, even with identical configurations.
+
+This project therefore evaluates:
+
+* multiple seeds
+* mean/std performance
+* stability-aware optimization
+
+instead of relying on single runs.
+
+---
+
+## Error Analysis Is Extremely Valuable
+
+False negative visualization revealed that difficult samples often contained:
+
+* shadows
+* occlusions
+* unusual perspectives
+* partial zebra crossings
+
+This analysis guided most later improvements.
+
+---
+
+# Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Luisantopy/Zebra.git
+cd Zebra
+```
+
+Create environment:
+
+```bash
+uv venv
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+uv sync
+```
+
+---
+
+# Training
+
+Example:
+
+```bash
+uv run python -m torch_training.training_pipeline
+```
+
+---
+
+# Single Image Prediction
+
+Example:
+
+```bash
+uv run python -m torch_training.predict_single path/to/image.png \
+  --weights trained_models/best_model.pth \
+  --model resnet50_cross_entropy \
+  --threshold 0.33
+```
+
+---
+
+# Technologies Used
+
+* PyTorch
+* Torchvision
+* TensorFlow / Keras
+* NumPy
+* Matplotlib
+* scikit-learn
+* Optuna
+
+---
+
+# Future Work
+
+Potential next steps:
+
+* Vision Transformers
+* segmentation models
+* focal loss
+* hard negative mining
+* test-time augmentation
+* ensemble methods
+* uncertainty estimation
+
+---
+
+# Author
+
+Created by Luisa Plasczymonka as part of a deep learning experimentation 
+project on aerial image classification and robust zebra crossing detection.
