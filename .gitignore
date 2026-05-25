@@ -1,12 +1,44 @@
-.venv
+# Virtual environments
+.venv/
+venv/
 
-/swissimage_annotator
+# Python
+__pycache__/
+*.pyc
+*.pyo
 
-# Daten (lokal)
-/data/
+# Jupyter
+.ipynb_checkpoints/
 
-# Betriebssystem-Dateien
+# macOS
 .DS_Store
 
-# Log files
+# Data
+/data/
+*.tar.gz
+*.zip
+
+# SwissImage Annotator
+/swissimage_annotator/
+
+# Logs
 /logs/
+*.log
+
+# Plots
+/plots/
+*.png
+*.jpg
+
+# ML artifacts
+trained_models/
+optuna_runs/
+*.pth
+*.pt
+*.ckpt
+
+# VS Code
+.vscode/
+
+# Torch cache
+.cache/
