@@ -19,7 +19,7 @@ __pycache__/
 *.zip
 
 # SwissImage Annotator
-swissimage_annotator/*
+swissimage_annotator/
 
 # Logs
 /logs/
