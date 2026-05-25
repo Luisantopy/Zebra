@@ -1,0 +1,40 @@
+Epoch 1/5 | Train Loss: 0.0808 | Train Acc: 0.9749 | Train Recall: 0.7598 | Train Precision: 0.9728 | Train F1: 0.8532 | Val Loss: 0.0955 | Val Acc: 0.9675 | Val Recall: 0.2560 | Val Precision: 0.8767 | Val F1: 0.3963 
+Epoch 2/5 | Train Loss: 0.0368 | Train Acc: 0.9886 | Train Recall: 0.9034 | Train Precision: 0.9778 | Train F1: 0.9391 | Val Loss: 0.1090 | Val Acc: 0.9673 | Val Recall: 0.2200 | Val Precision: 0.9821 | Val F1: 0.3595 
+Epoch 3/5 | Train Loss: 0.0289 | Train Acc: 0.9915 | Train Recall: 0.9301 | Train Precision: 0.9819 | Train F1: 0.9553 | Val Loss: 0.0993 | Val Acc: 0.9712 | Val Recall: 0.3240 | Val Precision: 0.9529 | Val F1: 0.4836 
+Epoch 4/5 | Train Loss: 0.0250 | Train Acc: 0.9930 | Train Recall: 0.9409 | Train Precision: 0.9865 | Train F1: 0.9632 | Val Loss: 0.1073 | Val Acc: 0.9692 | Val Recall: 0.2680 | Val Precision: 0.9710 | Val F1: 0.4201 
+Epoch 5/5 | Train Loss: 0.0240 | Train Acc: 0.9929 | Train Recall: 0.9452 | Train Precision: 0.9839 | Train F1: 0.9641 | Val Loss: 0.0978 | Val Acc: 0.9720 | Val Recall: 0.3480 | Val Precision: 0.9457 | Val F1: 0.5088 
+Epoch 1/10 | Train Loss: 0.0157 | Train Acc: 0.9956 | Train Recall: 0.9639 | Train Precision: 0.9910 | Train F1: 0.9773 | Val Loss: 0.0749 | Val Acc: 0.9783 | Val Recall: 0.4880 | Val Precision: 0.9839 | Val F1: 0.6524 
+Epoch 2/10 | Train Loss: 0.0102 | Train Acc: 0.9971 | Train Recall: 0.9775 | Train Precision: 0.9929 | Train F1: 0.9851 | Val Loss: 0.0472 | Val Acc: 0.9868 | Val Recall: 0.6920 | Val Precision: 0.9886 | Val F1: 0.8141 
+Epoch 3/10 | Train Loss: 0.0079 | Train Acc: 0.9979 | Train Recall: 0.9831 | Train Precision: 0.9938 | Train F1: 0.9884 | Val Loss: 0.0660 | Val Acc: 0.9832 | Val Recall: 0.6040 | Val Precision: 0.9869 | Val F1: 0.7494 
+Epoch 4/10 | Train Loss: 0.0071 | Train Acc: 0.9976 | Train Recall: 0.9821 | Train Precision: 0.9938 | Train F1: 0.9879 | Val Loss: 0.0380 | Val Acc: 0.9900 | Val Recall: 0.7680 | Val Precision: 0.9897 | Val F1: 0.8649 
+Epoch 5/10 | Train Loss: 0.0049 | Train Acc: 0.9986 | Train Recall: 0.9904 | Train Precision: 0.9955 | Train F1: 0.9929 | Val Loss: 0.0718 | Val Acc: 0.9810 | Val Recall: 0.5440 | Val Precision: 1.0000 | Val F1: 0.7047 
+Epoch 6/10 | Train Loss: 0.0047 | Train Acc: 0.9985 | Train Recall: 0.9871 | Train Precision: 0.9978 | Train F1: 0.9924 | Val Loss: 0.0489 | Val Acc: 0.9873 | Val Recall: 0.7000 | Val Precision: 0.9943 | Val F1: 0.8216 
+Epoch 7/10 | Train Loss: 0.0046 | Train Acc: 0.9988 | Train Recall: 0.9895 | Train Precision: 0.9978 | Train F1: 0.9937 | Val Loss: 0.0376 | Val Acc: 0.9900 | Val Recall: 0.7680 | Val Precision: 0.9897 | Val F1: 0.8649 
+Epoch 8/10 | Train Loss: 0.0034 | Train Acc: 0.9991 | Train Recall: 0.9923 | Train Precision: 0.9985 | Train F1: 0.9954 | Val Loss: 0.0354 | Val Acc: 0.9910 | Val Recall: 0.7920 | Val Precision: 0.9900 | Val F1: 0.8800 
+Epoch 9/10 | Train Loss: 0.0018 | Train Acc: 0.9996 | Train Recall: 0.9967 | Train Precision: 0.9989 | Train F1: 0.9978 | Val Loss: 0.0372 | Val Acc: 0.9908 | Val Recall: 0.7840 | Val Precision: 0.9949 | Val F1: 0.8770 
+Epoch 10/10 | Train Loss: 0.0023 | Train Acc: 0.9992 | Train Recall: 0.9936 | Train Precision: 0.9986 | Train F1: 0.9961 | Val Loss: 0.0316 | Val Acc: 0.9933 | Val Recall: 0.8520 | Val Precision: 0.9861 | Val F1: 0.9142 
+
+Threshold tuning on validation set:
+Threshold: 0.10 | Acc: 0.9938 | Recall: 0.8920 | Precision: 0.9571 | F1: 0.9234
+Threshold: 0.14 | Acc: 0.9943 | Recall: 0.8840 | Precision: 0.9779 | F1: 0.9286
+Threshold: 0.19 | Acc: 0.9942 | Recall: 0.8760 | Precision: 0.9821 | F1: 0.9260
+Threshold: 0.23 | Acc: 0.9937 | Recall: 0.8640 | Precision: 0.9818 | F1: 0.9191
+Threshold: 0.28 | Acc: 0.9937 | Recall: 0.8640 | Precision: 0.9818 | F1: 0.9191
+Threshold: 0.32 | Acc: 0.9937 | Recall: 0.8640 | Precision: 0.9818 | F1: 0.9191
+Threshold: 0.37 | Acc: 0.9933 | Recall: 0.8560 | Precision: 0.9817 | F1: 0.9145
+Threshold: 0.41 | Acc: 0.9932 | Recall: 0.8520 | Precision: 0.9816 | F1: 0.9122
+Threshold: 0.46 | Acc: 0.9933 | Recall: 0.8520 | Precision: 0.9861 | F1: 0.9142
+Threshold: 0.50 | Acc: 0.9933 | Recall: 0.8520 | Precision: 0.9861 | F1: 0.9142
+
+Best threshold (min_recall constraint): 0.14 | Recall: 0.8840 | Precision: 0.9779 | F1: 0.9286
+Test with tuned threshold=0.14 | Acc: 0.9915 | Recall: 0.8413 | Precision: 0.9507 | F1: 0.8926
+
+Confusion matrix:
+[[5737   11]
+ [  40  212]]
+Saved hard positives to: trained_models/exp_20260520_164416/hard_positives.txt
+Found 29 false negatives
+Saved to: trained_models/exp_20260520_164416/false_negatives.png
+Found 40 false negatives
+Saved to: trained_models/exp_20260520_164416/test_false_negatives.png
+Seed 30 → Test F1: 0.8926 | Recall: 0.8413 | Precision: 0.9507

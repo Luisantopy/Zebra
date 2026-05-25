@@ -31,11 +31,15 @@ swissimage_annotator/*
 *.jpg
 
 # ML artifacts
-trained_models/
-optuna_runs/
+trained_models/*
+optuna_runs/*
 *.pth
 *.pt
 *.ckpt
+
+# Allow selected Models
+!trained_models/selected_models/
+!trained_models/selected_models/**
 
 # VS Code
 .vscode/
