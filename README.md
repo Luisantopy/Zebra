@@ -239,7 +239,7 @@ Special focus is placed on reducing False Negatives, since missing a zebra cross
 
 # Results
 
-## Best Performing Model
+#### Best Performing Model
 
 The best results were achieved using:
 
@@ -277,7 +277,7 @@ Example confusion matrix:
 
 # Key Learnings
 
-## Transfer Learning Matters
+### Transfer Learning Matters
 
 Pretrained ResNet models significantly improved:
 
@@ -288,9 +288,7 @@ Pretrained ResNet models significantly improved:
 
 compared to custom CNNs.
 
----
-
-## Seed Dependency Is Real
+### Seed Dependency Is Real
 
 Different random seeds produced surprisingly different results, even with identical configurations.
 
@@ -302,9 +300,7 @@ This project therefore evaluates:
 
 instead of relying on single runs.
 
----
-
-## Error Analysis Is Extremely Valuable
+### Error Analysis Is Extremely Valuable
 
 False negative visualization revealed that difficult samples often contained:
 
@@ -356,7 +352,7 @@ Example:
 uv run python -m torch_training.training_pipeline
 ```
 
-## Output
+### Output
 
 Each training run creates a new experiment directory in `trained_models/`.
 
@@ -376,7 +372,7 @@ Selected reference models can be found in:
 trained_models/selected_models/
 ```
 
-## Notes
+### Notes
 
 - Validation data is used for hyperparameter tuning and threshold selection.
 - Test data is used only for the final evaluation.
