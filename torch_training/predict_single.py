@@ -139,6 +139,7 @@ def main():
         choices=["cross_entropy", "binary_bce", "resnet18_cross_entropy", "resnet50_cross_entropy"],
     )
 
+    # Optionale Argumente:
     # Klassenreihenfolge
     parser.add_argument(
         "--classes",
