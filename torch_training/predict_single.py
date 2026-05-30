@@ -60,6 +60,12 @@ def predict_image(image_path, model, device, class_names, model_name, threshold=
     Unterstützt:
     - BCE Modelle
     - CrossEntropy Modelle
+    - pretrained ResNet18 / ResNet50 CrossEntropy-Modelle
+
+    Wichtig:
+    ResNet18 und ResNet50 liefern wie das CrossEntropy-CNN
+    zwei Logits zurück. Deshalb kann dieselbe Softmax- und Threshold-
+    Logik verwendet werden.
     """
     model_type = get_model_type(model_name)
 
@@ -88,7 +94,7 @@ def predict_image(image_path, model, device, class_names, model_name, threshold=
             # threshold-basierte Entscheidung
             pred_idx = int(prob_pos >= threshold)
         
-        # --- CrossEntropy Modell --
+        # --- CrossEntropy Modelle --
         else:
 
             # softmax Wahrscheinlichkeiten
@@ -130,7 +136,7 @@ def main():
         "--model",
         type=str,
         default="cross_entropy",
-        choices=["cross_entropy", "binary_bce"],
+        choices=["cross_entropy", "binary_bce", "resnet18_cross_entropy", "resnet50_cross_entropy"],
     )
 
     # Klassenreihenfolge
