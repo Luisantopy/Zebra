@@ -46,3 +46,6 @@ optuna_runs/*
 
 # Torch cache
 .cache/
+
+# Abgabe 
+project_links.md
