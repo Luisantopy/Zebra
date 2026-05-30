@@ -438,6 +438,8 @@ uv run python -m torch_training.predict_all \
   --threshold 0.19
 ```
 
+No separate evaluation script has been implemented for keras models. 
+
 ---
 
 # Technologies Used
@@ -469,3 +471,7 @@ Potential next steps:
 Created by Luisa Plasczymonka as part of a deep learning experimentation 
 project on aerial image classification and robust zebra crossing detection.
 For in-depth project discussion see `documentation/projektbericht.md`
+
+#### Use of Artificial Intelligence
+
+Artificial intelligence tools were used as supporting development aids during the project, particularly for code review, debugging, and documentation. The design, implementation, evaluation, and interpretation of all experiments were carried out independently, and all generated suggestions were critically reviewed before being incorporated into the project.
