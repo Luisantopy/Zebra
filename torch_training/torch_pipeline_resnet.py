@@ -337,7 +337,7 @@ def run_experiment(seed, config, create_plots=True):
 def main():
 
     results = []
-    seeds = [10, 20, 30, 40, 50]
+    seeds = [20]
     lr = 1e-3
     for seed in seeds:
         print(f"\n--- Seed {seed} --- | lr={lr} ---")

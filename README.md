@@ -28,10 +28,8 @@ The project focuses on:
 
 ## Dataset
 
-The dataset consists of aerial image patches labelled as:
-
-- `y`: zebra crossing present
-- `n`: no zebra crossing
+The dataset was manually labelled using the *Swissimage Annotator* tool ([https://github.com/sudoale/swissimage_annotator.git]).
+Images were labelled positive (`y`: zebra crossing present) if a human would classify them as such without regard to neighboring images. Otherwise they were labelled as negative (`n`: no zebra crossing present).
 
 The dataset is highly imbalanced, with significantly fewer positive samples (`y`) than negative samples (`n`).
 
@@ -349,7 +347,7 @@ Different pipelines are used for different model types:
 Example:
 
 ```bash
-uv run python -m torch_training.training_pipeline
+uv run python -m torch_training.training_pipeline_resnet
 ```
 
 ### Output
