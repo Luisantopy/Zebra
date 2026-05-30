@@ -13,7 +13,11 @@ from pathlib import Path
 from datetime import datetime
 import random
 import numpy as np
-from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import (
+    precision_recall_curve,
+    confusion_matrix,
+    ConfusionMatrixDisplay
+)
 
 # --- image plot helper from https://github.com/pytorch/vision/blob/main/gallery/transforms/helpers.py
 def plot(imgs, row_title=None, bbox_width=3, **imshow_kwargs):
@@ -632,3 +636,41 @@ def collect_labels_and_probs(model, loader, device, positive_label=1):
     probs = np.concatenate(all_probs).ravel()
 
     return labels, probs
+
+
+# --- Confusion Matrix speichern ---
+def save_confusion_matrix(
+    y_true,
+    y_pred,
+    class_names,
+    save_path,
+    title,
+):
+    """
+    Erstellt und speichert eine Confusion-Matrix-Grafik.
+    """
+    cm = confusion_matrix(
+        y_true,
+        y_pred,
+        labels=list(range(len(class_names))),
+    )
+
+    disp = ConfusionMatrixDisplay(
+        confusion_matrix=cm,
+        display_labels=class_names,
+    )
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    disp.plot(
+        ax=ax,
+        values_format="d",
+        colorbar=False,
+    )
+
+    ax.set_title(title)
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=200)
+    plt.close()
+
+    return cm
