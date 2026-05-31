@@ -11,11 +11,13 @@ data/val/y/2500150_1116275.png
 data/val/y/2500200_1116625.png
 data/val/y/2500225_1117900.png
 data/val/y/2500300_1117950.png
-data/val/y/2500650_1115125.png
+data/val/y/2500450_1117700.png
 data/val/y/2613950_1179225.png
 data/val/y/2614175_1178725.png
 data/val/y/2614200_1178725.png
 data/val/y/2614250_1178150.png
+data/val/y/2614400_1178325.png
 data/val/y/2614425_1179125.png
+data/val/y/2614600_1178575.png
 data/val/y/2614725_1178025.png
-data/val/y/2759800_1191775.png
+data/val/y/2614925_1179650.png

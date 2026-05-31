@@ -28,7 +28,7 @@ The project focuses on:
 
 ## Dataset
 
-The dataset was manually labelled using the *Swissimage Annotator* tool ([https://github.com/sudoale/swissimage_annotator.git]).
+The dataset was manually labelled using the *Swissimage Annotator* tool [https://github.com/sudoale/swissimage_annotator.git].
 Images were labelled positive (`y`: zebra crossing present) if a human would classify them as such without regard to neighboring images. Otherwise they were labelled as negative (`n`: no zebra crossing present).
 
 The dataset is highly imbalanced, with significantly fewer positive samples (`y`) than negative samples (`n`).
@@ -80,8 +80,6 @@ zebra/
 # Features
 
 ## Models
-
-Implemented and tested:
 
 ### Custom CNNs
 
@@ -189,19 +187,28 @@ Implemented techniques:
 
 ## Experiment Tracking
 
-Each experiment automatically stores:
-
-* best model weights
-* final model weights
-* metrics
-* confusion matrices
-* false negative visualizations
-* hard positive samples
-
-Example:
+Each training run creates a new experiment directory in `trained_models/`.
+Example: 
 
 ```text
 trained_models/exp_20260520_123456/
+```
+
+The directory contains:
+
+- `best_model.pth` – model with the best validation score
+- `final_model.pth` – model after the final training epoch
+- `config.txt` – training configuration and hyperparameters
+- `metrics.txt` – training, validation and test metrics
+- precision–recall curves
+- probability histograms
+- false negative analysis plots
+- `hard_positives.txt` - difficult samples to be reviewed more often in future training
+
+Selected reference models can be found in:
+
+```text
+trained_models/selected_models/
 ```
 
 ---
@@ -251,14 +258,14 @@ Typical performance:
 | Metric    | Value      |
 | --------- | ---------- |
 | Precision | ~0.95–0.97 |
-| Recall    | ~0.84      |
-| F1 Score  | ~0.89–0.90 |
+| Recall    | ~0.84-0.87      |
+| F1 Score  | ~0.89–0.91 |
 
 Example confusion matrix:
 
 ```text
-[[5739    9]
- [  39  213]]
+[[6282   12]
+ [  36  234]]
 ```
 
 ---
@@ -269,7 +276,6 @@ Example confusion matrix:
 - ResNet50 achieved the best overall performance.
 - False negatives were more difficult to eliminate than false positives.
 - Aggressive augmentation did not necessarily improve recall.
-- Model performance remained sensitive to random seed selection.
 
 ---
 
@@ -348,26 +354,6 @@ Example:
 
 ```bash
 uv run python -m torch_training.training_pipeline_resnet
-```
-
-### Output
-
-Each training run creates a new experiment directory in `trained_models/`.
-
-The directory contains:
-
-- `best_model.pth` – model with the best validation score
-- `final_model.pth` – model after the final training epoch
-- `config.txt` – training configuration and hyperparameters
-- `metrics.txt` – training, validation and test metrics
-- precision–recall curves
-- probability histograms
-- false negative analysis plots
-
-Selected reference models can be found in:
-
-```text
-trained_models/selected_models/
 ```
 
 ### Notes

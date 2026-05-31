@@ -90,7 +90,7 @@ def run_experiment(seed, config, create_plots=True):
     test_loader = get_loader(test_dataset, batch_size=32, seed=seed)
 
     # --- Modell ---
-    model_name = "resnet50_cross_entropy"  # hier Modellname austauschen für anderes Modell aus registry.py, zB "cross_entropy" oder "cross_entropy_simple"
+    model_name = "resnet18_cross_entropy"  # hier Modellname austauschen für anderes Modell aus registry.py, zB "cross_entropy" oder "cross_entropy_simple"
     model_type = get_model_type(model_name)
 
     if model_type == "binary":
@@ -271,7 +271,7 @@ def run_experiment(seed, config, create_plots=True):
     print("\nConfusion matrix:")
     print(cm)
 
-    # NEU: False Negatives aus Validation, nicht aus Test, 
+    # False Negatives aus Validation, nicht aus Test, 
     # damit keine Data Leakage entsteht, wenn die hard positives
     # in weiteren runs als Train Daten verwendet werden
     plot_false_negatives(
@@ -337,7 +337,7 @@ def run_experiment(seed, config, create_plots=True):
 def main():
 
     results = []
-    seeds = [20]
+    seeds = [10, 20, 30, 40, 50]
     lr = 1e-3
     for seed in seeds:
         print(f"\n--- Seed {seed} --- | lr={lr} ---")

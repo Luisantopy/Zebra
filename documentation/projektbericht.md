@@ -820,17 +820,10 @@ Die kleinere Learning Rate erwies sich hier als besonders wichtig, da das gröss
 Das ResNet50 führte zu einer weiteren Verbesserung der Ergebnisse.
 
 Beispielsweise wurden Konfusionsmatrizen erreicht wie:
-
+ 
 ```text
-[[5739    9]
- [  39  213]]
-```
-
-bzw.
-
-```text
-[[5742    6]
- [  41  211]]
+[[6282   12]
+ [  36  234]]
 ```
 
 mit:
@@ -956,7 +949,7 @@ Die Analyse der False Negatives war wahrscheinlich wertvoller als weiteres Hyper
 
 ### Pretrained Modelle helfen stark
 
-ResNet18 lieferte:
+ResNet50 lieferte:
 
 * bessere Features
 * robustere Entscheidungen
